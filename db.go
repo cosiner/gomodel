@@ -1,6 +1,5 @@
 // Package database is a library help for interact with database by model
-//
-package database
+package gomodel
 
 import (
 	"database/sql"

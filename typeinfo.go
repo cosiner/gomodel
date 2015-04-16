@@ -1,4 +1,4 @@
-package database
+package gomodel
 
 import (
 	"database/sql"

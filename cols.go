@@ -1,4 +1,4 @@
-package database
+package gomodel
 
 import "github.com/cosiner/gohper/lib/types"
 
