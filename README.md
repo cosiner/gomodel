@@ -30,6 +30,10 @@ const (
     userFieldsAll = 1 << userFieldsEnd - 1
 )
 ```
+* __DB__
+```Go
+db := gomodel.NewDB()
+```
 * __Insert__
 ```Go
 u := &User{Age:1, Name:"abcde"}

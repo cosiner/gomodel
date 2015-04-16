@@ -2,7 +2,11 @@
 //
 package database
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/cosiner/gohper/lib/types"
+)
 
 type (
 	// Model represent a database model
@@ -23,15 +27,19 @@ type (
 	}
 )
 
+var (
+	FieldCount = types.BitCountUint
+)
+
 // Open create a database manager and connect to database server
 func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
-	db := New()
+	db := NewDB()
 	err := db.Connect(driver, dsn, maxIdle, maxOpen)
 	return db, err
 }
 
 // New create a new db
-func New() *DB {
+func NewDB() *DB {
 	return &DB{
 		types: make(map[string]*TypeInfo),
 	}
@@ -47,12 +55,6 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 		db.Cacher = NewCacher(Types, db)
 	}
 	return err
-}
-
-// RegisterType register type info, model must not exist
-func (db *DB) RegisterType(v Model) {
-	table := v.Table()
-	db.registerType(v, table)
 }
 
 // registerType save type info of model
@@ -120,7 +122,7 @@ func (db *DB) rows(v Model, fields, whereFields uint, start, count int) (*sql.Ro
 	args := make([]interface{}, c+2)
 	v.Vals(whereFields, args)
 	args[c], args[c+1] = start, count
-	stmt, err := db.TypeInfo(v).LimitSelectStmt(fields, whereFields)
+	stmt, err := db.TypeInfo(v).SelectLimitStmt(fields, whereFields)
 	if err == nil {
 		return stmt.Query(args...)
 	}
@@ -172,12 +174,12 @@ func (db *DB) ScanLimit(v Model, s Scanner, fields, whereFields uint, start, cou
 	return ScanLimit(rows, err, s, count)
 }
 
-// Count return count of rows for model
+// Count return count of rows for model, arguments was extracted from Model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
 	return db.CountWith(v, whereFields, FieldVals(whereFields, v))
 }
 
-// CountWith return count of rows for model use given arguments
+// CountWith return count of rows for model use custome arguments
 func (db *DB) CountWith(v Model, whereFields uint,
 	args []interface{}) (count uint, err error) {
 	ti := db.TypeInfo(v)
@@ -189,12 +191,13 @@ func (db *DB) CountWith(v Model, whereFields uint,
 	return
 }
 
-// ExecUpdate execute a update operation
+// ExecUpdate execute a update operation, return resolved result
 func (db *DB) ExecUpdate(s string, args []interface{}, needId bool) (ret int64, err error) {
 	res, err := db.Exec(s, args...)
 	return ResolveResult(res, err, needId)
 }
 
+// StmtExec execute stmt with given arguments and resolve the result if error is nil
 func StmtExec(stmt *sql.Stmt, err error, args []interface{}, needId bool) (int64, error) {
 	if err == nil {
 		res, err := stmt.Exec(args...)
@@ -204,7 +207,7 @@ func StmtExec(stmt *sql.Stmt, err error, args []interface{}, needId bool) (int64
 }
 
 // ResolveResult resolve sql result, if need id, return last insert id
-// else return affected row count
+// else return affected rows count
 func ResolveResult(res sql.Result, err error, needId bool) (int64, error) {
 	if err == nil {
 		if needId {

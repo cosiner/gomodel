@@ -18,10 +18,10 @@ type (
 	// it's used for a single model
 	//
 	// if custom is necessary, call cache.ExtendType(cache.Types()+1) to make
-	// a new type, the id is bring your owns, also you can still use the standard
+	// a new type, the sql id is bring your owns, also you can still use the standard
 	// FieldIdentity(fields, whereFields) if possible
 	Cacher struct {
-		cache []map[uint]cacheItem // [typeCount]map[id]{sql, stmt}
+		cache []map[uint]cacheItem // [type]map[id]{sql, stmt}
 		db    *DB
 	}
 )
@@ -31,7 +31,7 @@ const (
 	INSERT uint = iota
 	DELETE
 	UPDATE
-	LIMIT_SELECT
+	SELECT_LIMIT
 	SELECT_ONE
 	defaultTypeEnd
 )

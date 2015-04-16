@@ -64,7 +64,7 @@ func (ti *TypeInfo) Stmt(typ, fields, whereFields uint, create SQLCreator) (*sql
 }
 
 func (ti *TypeInfo) InsertStmt(fields uint) (*sql.Stmt, error) {
-	return ti.Stmt(LIMIT_SELECT, fields, 0, ti.InsertSQL)
+	return ti.Stmt(INSERT, fields, 0, ti.InsertSQL)
 }
 
 func (ti *TypeInfo) UpdateStmt(fields, whereFields uint) (*sql.Stmt, error) {
@@ -75,8 +75,8 @@ func (ti *TypeInfo) DeleteStmt(whereFields uint) (*sql.Stmt, error) {
 	return ti.Stmt(DELETE, 0, whereFields, ti.DeleteSQL)
 }
 
-func (ti *TypeInfo) LimitSelectStmt(fields, whereFields uint) (*sql.Stmt, error) {
-	return ti.Stmt(LIMIT_SELECT, fields, whereFields, ti.LimitSelectSQL)
+func (ti *TypeInfo) SelectLimitStmt(fields, whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(SELECT_LIMIT, fields, whereFields, ti.SelectLimitSQL)
 }
 
 func (ti *TypeInfo) SelectOneStmt(fields, whereFields uint) (*sql.Stmt, error) {
@@ -84,7 +84,7 @@ func (ti *TypeInfo) SelectOneStmt(fields, whereFields uint) (*sql.Stmt, error) {
 }
 
 func (ti *TypeInfo) CountStmt(whereFields uint) (*sql.Stmt, error) {
-	return ti.Stmt(LIMIT_SELECT, 0, whereFields, ti.CountSQL)
+	return ti.Stmt(SELECT_LIMIT, 0, whereFields, ti.CountSQL)
 }
 
 // InsertSQL create insert sql for given fields
@@ -109,15 +109,15 @@ func (ti *TypeInfo) DeleteSQL(_, whereFields uint) string {
 	return fmt.Sprintf("DELETE FROM %s %s", ti.Table, ti.Where(whereFields))
 }
 
-// LimitSelectSQL create select sql for given fields
-func (ti *TypeInfo) LimitSelectSQL(fields, whereFields uint) string {
+// SelectLimitSQL create select sql for given fields
+func (ti *TypeInfo) SelectLimitSQL(fields, whereFields uint) string {
 	return fmt.Sprintf("SELECT %s FROM %s %s LIMIT ?, ?",
 		ti.Cols(fields),
 		ti.Table,
 		ti.Where(whereFields))
 }
 
-// LimitSelectSQL create select sql for given fields
+// SelectLimitSQL create select sql for given fields
 func (ti *TypeInfo) SelectOneSQL(fields, whereFields uint) string {
 	return fmt.Sprintf("SELECT %s FROM %s %s LIMIT 1",
 		ti.Cols(fields),
