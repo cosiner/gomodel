@@ -53,11 +53,8 @@ func (ti *TypeInfo) Stmt(typ, fields, whereFields uint, create SQLCreator) (*sql
 	sql_, stmt := ti.Cacher.GetStmt(typ, id)
 	if stmt == nil {
 		sql_ = create(fields, whereFields)
-		stmt, err := ti.Cacher.SetStmt(typ, id, sql_)
-		if err == nil {
-			printSQL(false, sql_)
-		}
-		return stmt, err
+		printSQL(false, sql_)
+		return ti.Cacher.SetStmt(typ, id, sql_)
 	}
 	printSQL(true, sql_)
 	return stmt, nil
@@ -134,14 +131,14 @@ func (ti *TypeInfo) CountSQL(_, whereFields uint) string {
 
 func (ti *TypeInfo) Where(fields uint) string {
 	if cols := ti.Cols(fields); cols.Length() != 0 {
-		return "WHERE " + cols.Paramed()
+		return "WHERE " + cols.Join("=?", " AND ")
 	}
 	return ""
 }
 
 func (ti *TypeInfo) TypedWhere(fields uint) string {
 	if cols := ti.TypedCols(fields); cols.Length() != 0 {
-		return "WHERE " + cols.Paramed()
+		return "WHERE " + cols.Join("=?", " AND ")
 	}
 	return ""
 }
