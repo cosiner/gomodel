@@ -13,6 +13,7 @@ const (
     {{end}}
 )
 var (
+    // DB is the global DB instance
     {{$lowerModel}}Info = DB.TypeInfo(&{{$normalModel}}{})
 )
 
@@ -50,7 +51,7 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
     }
 }
 
-func {{$recv}} New() database.Model {
+func {{$recv}} New() gomodel.Model {
     return new({{$normalModel}})
 }
 
