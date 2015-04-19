@@ -105,10 +105,10 @@ func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error)
 		return item.stmt, nil
 	}
 	sql_ := create()
+	printSQL(false, sql_)
 	stmt, err := c.db.Prepare(sql_)
 	if err == nil {
 		c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
-		printSQL(false, sql_)
 	}
 	return stmt, err
 }
