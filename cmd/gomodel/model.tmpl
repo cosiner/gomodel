@@ -1,20 +1,19 @@
 {{range $model, $fields := .}}
 {{$normalModel := $model.Name}}
-{{$lowerModel := $model.LowerName}}
+{{$unexport := $model.UnexportedName}}
 {{$upperModel := $model.UpperName}}
-{{$unexportModel := $model.UnexportedName}}
 {{$self := $model.Self}}
 {{$recv := (printf "(%s *%s)" $self $normalModel)}}
 const (
     {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
-    {{end}}{{$lowerModel}}FieldEnd = iota
-    {{$lowerModel}}FieldsAll = 1 << {{$lowerModel}}FieldEnd-1
-    {{range $index, $field := $fields}}{{with $field}}{{$lowerModel}}FieldsExcp{{.Name}} = {{$lowerModel}}FieldsAll &(^{{.ConstName}}){{end}}
+    {{end}}{{$unexport}}FieldEnd = iota
+    {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
+    {{range $index, $field := $fields}}{{with $field}}{{$unexport}}FieldsExcp{{.Name}} = {{$unexport}}FieldsAll &(^{{.ConstName}}){{end}}
     {{end}}
 )
 var (
     // DB is the global DB instance
-    {{$lowerModel}}Info = DB.TypeInfo(&{{$normalModel}}{})
+    {{$unexport}}Info = DB.TypeInfo(&{{$normalModel}}{})
 )
 
 func {{$recv}} Table() string {
@@ -23,7 +22,7 @@ func {{$recv}} Table() string {
 
 func {{$recv}} Vals(fields uint, vals []interface{}) {
     if fields != 0 {
-    if fields == {{$lowerModel}}FieldsAll {
+    if fields == {{$unexport}}FieldsAll {
         {{range $index, $field:=$fields}}vals[{{$index}}]={{$self}}.{{$field.Name}}
         {{end}}
     } else {
@@ -38,7 +37,7 @@ func {{$recv}} Vals(fields uint, vals []interface{}) {
 
 func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
     if fields != 0 {
-        if fields == {{$lowerModel}}FieldsAll {
+        if fields == {{$unexport}}FieldsAll {
         {{range $index, $field:=$fields}}ptrs[{{$index}}]=&({{$self}}.{{$field.Name}})
         {{end}}
          } else {
@@ -56,17 +55,17 @@ func {{$recv}} New() gomodel.Model {
 }
 
 type (
-    {{$lowerModel}}s struct {
+    {{$unexport}}s struct {
         Items []{{$normalModel}}
         Fields uint
     }
 )
 
-func (a *{{$lowerModel}}s) Make(count int) {
+func (a *{{$unexport}}s) Make(count int) {
     a.Items = make([]{{$normalModel}}, count)
 }
 
-func (a *{{$lowerModel}}s) Ptrs(index int, ptrs []interface{}) {
+func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) {
     a.Items[index].Ptrs(a.Fields, ptrs)
 }
 {{end}}

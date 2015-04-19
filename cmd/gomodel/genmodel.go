@@ -88,7 +88,6 @@ type StructName struct {
 	Name           string // struct's normal name
 	Self           string
 	UnexportedName string
-	LowerName      string // lower case name
 	UpperName      string // upper case name
 	TableName      string
 }
@@ -111,24 +110,26 @@ func NewFieldName(model *StructName, field string) *FieldName {
 	return f
 }
 
-func NewStructName(name string) *StructName {
-	return &StructName{Name: name,
+func NewStructName(name, table string) *StructName {
+	s := &StructName{
+		Name:           name,
 		Self:           types.AbridgeStringToLower(name),
 		UnexportedName: goutil.UnexportedCase(name),
-		LowerName:      strings.ToLower(name),
-		UpperName:      strings.ToUpper(name)}
+		UpperName:      strings.ToUpper(name),
+	}
+	if table != "" {
+		s.TableName = table
+	} else {
+		s.TableName = strings.ToLower(types.CamelString(name))
+	}
+	return s
 }
 
 // buildModelFields build model map from parse result
 func buildModelFields(mv *modelVisitor) map[*StructName][]*FieldName {
 	names := make(map[*StructName][]*FieldName, len(models))
 	for model, fields := range mv.models {
-		modelStruct := NewStructName(model)
-		if t := mv.tables[model]; t != "" {
-			modelStruct.TableName = t
-		} else {
-			modelStruct.TableName = modelStruct.LowerName
-		}
+		modelStruct := NewStructName(model, mv.tables[model])
 		for _, name := range fields {
 			names[modelStruct] = append(names[modelStruct], NewFieldName(modelStruct, name))
 		}
