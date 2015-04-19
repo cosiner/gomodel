@@ -75,7 +75,7 @@ func main() {
 		}
 	}
 	OnErrExit(sys.OpenOrCreateFor(outfile, false, func(outfd *os.File) error {
-		modelFields := buildModelFields(mv.models)
+		modelFields := buildModelFields(mv)
 		var t *template.Template
 		if t, err = template.ParseFiles(tmplfile); err == nil {
 			err = t.Execute(outfd, modelFields)
@@ -90,6 +90,7 @@ type StructName struct {
 	UnexportedName string
 	LowerName      string // lower case name
 	UpperName      string // upper case name
+	TableName      string
 }
 
 type FieldName struct {
@@ -119,10 +120,15 @@ func NewStructName(name string) *StructName {
 }
 
 // buildModelFields build model map from parse result
-func buildModelFields(models map[string][]string) map[*StructName][]*FieldName {
+func buildModelFields(mv *modelVisitor) map[*StructName][]*FieldName {
 	names := make(map[*StructName][]*FieldName, len(models))
-	for model, fields := range models {
+	for model, fields := range mv.models {
 		modelStruct := NewStructName(model)
+		if t := mv.tables[model]; t != "" {
+			modelStruct.TableName = t
+		} else {
+			modelStruct.TableName = modelStruct.LowerName
+		}
 		for _, name := range fields {
 			names[modelStruct] = append(names[modelStruct], NewFieldName(modelStruct, name))
 		}
@@ -132,6 +138,7 @@ func buildModelFields(models map[string][]string) map[*StructName][]*FieldName {
 
 type modelVisitor struct {
 	models      map[string][]string
+	tables      map[string]string
 	modelsParse map[string]bool
 }
 
@@ -145,9 +152,13 @@ func (mv *modelVisitor) addModelNeedParse(models []string) {
 }
 
 // add add an model and it's field to parse result
-func (mv *modelVisitor) add(model, field string) {
+func (mv *modelVisitor) add(model, table, field string) {
 	if mv.models == nil {
 		mv.models = make(map[string][]string, 10)
+		mv.tables = make(map[string]string)
+	}
+	if table != "" {
+		mv.tables[model] = table
 	}
 	mv.models[model] = append(mv.models[model], field)
 }
@@ -175,14 +186,16 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field
-							tag := reflect.StructTag(f.Tag.Value)
-							if tag.Get("table") == "-" {
+							tagValue := f.Tag.Value
+							tag := reflect.StructTag(tagValue[1 : len(tagValue)-1]) // trim first '`' and last '`'
+							table := tag.Get("table")
+							if table == "-" {
 								break
 							}
 							if f.Tag == nil || tag.Get("column") != "-" {
 								for _, ident := range f.Names {
 									if ident.IsExported() {
-										mv.add(model, ident.Name)
+										mv.add(model, table, ident.Name)
 									}
 								}
 							}

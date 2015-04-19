@@ -18,7 +18,7 @@ var (
 )
 
 func {{$recv}} Table() string {
-    return "{{$lowerModel}}"
+    return "{{$model.TableName}}"
 }
 
 func {{$recv}} Vals(fields uint, vals []interface{}) {
