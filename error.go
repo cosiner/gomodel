@@ -7,7 +7,13 @@ import (
 	"github.com/cosiner/gohper/lib/types"
 )
 
+// Only tested for mysql
+
+// PRIMARY_KEY for combined foreign key
+const PRIMARY_KEY = "PRIMARY"
+
 func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
+	// Duplicate entry ... for key 'keyname'
 	const duplicate = "Duplicate"
 	const forKey = "for key"
 	if err != nil {
@@ -20,6 +26,24 @@ func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
 				if e := newErrFunc(s); e != nil {
 					err = e
 				}
+			}
+		}
+	}
+	return err
+}
+
+func ErrForForeignKey(err error, newErrFunc func(key string) error) error {
+	// FOREIGN KEY (`keyname`)
+	const foreign = "FOREIGN KEY "
+	if err != nil {
+		s := err.Error()
+		index := strings.Index(s, foreign)
+		if index > 0 {
+			index += len(foreign) + 2
+			s = s[index:]
+			next := strings.IndexByte(s, ')') - 1
+			if e := newErrFunc(s[:next]); e != nil {
+				err = e
 			}
 		}
 	}
