@@ -187,11 +187,14 @@ func (mv *modelVisitor) walk(tree *ast.File) {
 							continue
 						}
 						for _, f := range t.Fields.List { // model field
-							tagValue := f.Tag.Value
-							tag := reflect.StructTag(tagValue[1 : len(tagValue)-1]) // trim first '`' and last '`'
-							table := tag.Get("table")
-							if table == "-" {
-								break
+							var table string
+							var tag reflect.StructTag
+							if f.Tag != nil {
+								tagValue := f.Tag.Value
+								tag = reflect.StructTag(tagValue[1 : len(tagValue)-1]) // trim first '`' and last '`'
+								if table = tag.Get("table"); table == "-" {
+									break
+								}
 							}
 							if f.Tag == nil || tag.Get("column") != "-" {
 								for _, ident := range f.Names {
