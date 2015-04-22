@@ -62,7 +62,11 @@ type (
 )
 
 func (a *{{$unexport}}s) Make(count int) {
-    a.Items = make([]{{$normalModel}}, count)
+    if a.Items == nil {
+        a.Items = make([]{{$normalModel}}, count)
+    } else {
+        a.Items = a.Items[:count]
+    }
 }
 
 func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) {

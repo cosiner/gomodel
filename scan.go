@@ -36,7 +36,6 @@ func ScanLimit(rows *sql.Rows, err error, s Scanner, rowCount int) error {
 		var ptrs []interface{}
 		for rows.Next() {
 			if index < 0 {
-				index = 0
 				cols, _ := rows.Columns()
 				s.Make(rowCount)
 				ptrs = make([]interface{}, len(cols))

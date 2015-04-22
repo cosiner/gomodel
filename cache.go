@@ -2,7 +2,7 @@ package gomodel
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 )
 
 type (
@@ -48,9 +48,7 @@ var (
 func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 	if enable {
 		if formatter == nil {
-			formatter = func(format string, v ...interface{}) {
-				fmt.Printf(format, v...)
-			}
+			formatter = log.Printf
 		}
 		printSQL = func(fromcache bool, sql string) {
 			formatter("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
