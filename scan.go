@@ -40,12 +40,12 @@ func ScanLimit(rows *sql.Rows, err error, s Scanner, rowCount int) error {
 				s.Make(rowCount)
 				ptrs = make([]interface{}, len(cols))
 			}
+			index++
 			s.Ptrs(index, ptrs)
 			if err = rows.Scan(ptrs...); err != nil {
 				rows.Close()
 				return err
 			}
-			index++
 		}
 		if index < 0 {
 			err = sql.ErrNoRows
