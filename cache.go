@@ -3,9 +3,13 @@ package gomodel
 import (
 	"database/sql"
 	"log"
+	"sync/atomic"
 )
 
 type (
+	// ID help for generate sql id
+	ID int32
+
 	// cacheItem keeps the sql and prepared statement of it
 	cacheItem struct {
 		sql  string
@@ -54,6 +58,27 @@ func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 			formatter("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
 		}
 	}
+}
+
+// NewID create a id generator used for StmtById, normally, one ID is enough,
+// it's safety used for all models
+//
+// Example:
+// sqlid := gomodel.NewID
+//
+// sqlidUserUpdate := slqid.New()
+// sqlidUserDelete := sqlid.New()
+// sqlidBookUpdate := sqlid.New()
+// sqlidBookDelete := sqlid.New()
+//
+func NewID() *ID {
+	var i int32 = 0
+	return (*ID)(&i)
+}
+
+// New generate a new sql id
+func (i *ID) New() uint {
+	return uint(atomic.AddInt32((*int32)(i), 1))
 }
 
 // NewCacher create a common sql and statement cacher with given types count
