@@ -1,4 +1,4 @@
-# gomodel
+# gomodel [![wercker status](https://app.wercker.com/status/9c6ef0eec7d6d217bd831bbdc3a3ace2/s "wercker status")](https://app.wercker.com/project/bykey/9c6ef0eec7d6d217bd831bbdc3a3ace2)
 gomodel provide another method to interact with database.   
 Instead of reflection, use bitset represent fields of CRUD, sql/stmt cache and generate model code for you, high performance.
 

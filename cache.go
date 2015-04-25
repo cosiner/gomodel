@@ -72,7 +72,7 @@ func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 // sqlidBookDelete := sqlid.New()
 //
 func NewID() *ID {
-	var i int32 = 0
+	var i int32
 	return (*ID)(&i)
 }
 
