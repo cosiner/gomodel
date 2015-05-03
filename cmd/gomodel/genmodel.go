@@ -1,23 +1,22 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
 
-	"github.com/cosiner/gohper/lib/sys"
-
-	. "github.com/cosiner/gohper/lib/errors"
-	"github.com/cosiner/gohper/lib/goutil"
-	"github.com/cosiner/gohper/lib/types"
-
-	"flag"
-	"fmt"
+	"github.com/cosiner/gohper/defval"
+	"github.com/cosiner/gohper/errors"
+	"github.com/cosiner/gohper/goutil"
+	"github.com/cosiner/gohper/os2/file"
+	"github.com/cosiner/gohper/os2/path2"
+	"github.com/cosiner/gohper/strings2"
 )
 
 var (
@@ -44,44 +43,45 @@ func cliArgs() {
 const TmplName = "model.tmpl"
 
 // change this if need
-var defTmplPath = filepath.Join(sys.HomeDir(), ".config", "go", TmplName)
+var defTmplPath = filepath.Join(path2.Home(), ".config", "go", TmplName)
 
 func main() {
 	cliArgs()
 	if copyTmpl {
-		OnErrExit(sys.CopyFile(defTmplPath, TmplName))
+		errors.Fatal(file.Copy(defTmplPath, TmplName))
 		return
 	}
-	if infile == "" {
-		ExitErrorln("No input file specified.")
-	}
+	errors.CondDo(infile == "", errors.Err("No input file specified."), errors.Fatal)
 
-	models := types.TrimSplit(models, ",")
+	models := strings2.TrimSplit(models, ",")
 	tree, err := parser.ParseFile(token.NewFileSet(), infile, nil, 0)
-	OnErrDo(err, ExitErrln)
+	errors.Fatal(err)
+
 	mv := new(modelVisitor)
 	mv.addModelNeedParse(models)
 	mv.walk(tree)
+
 	if len(mv.models) == 0 {
 		return
 	}
-	if outfile == "" {
-		outfile = infile
-	}
+	defval.String(&outfile, infile)
+
 	if tmplfile == "" {
 		tmplfile = TmplName
-		if !sys.IsExist(tmplfile) {
+		if !file.IsExist(tmplfile) {
 			tmplfile = defTmplPath
 		}
 	}
-	OnErrExit(sys.OpenOrCreateFor(outfile, false, func(outfd *os.File) error {
-		modelFields := buildModelFields(mv)
-		var t *template.Template
-		if t, err = template.ParseFiles(tmplfile); err == nil {
-			err = t.Execute(outfd, modelFields)
-		}
-		return err
-	}))
+	fd, err := file.OpenOrCreate(outfile, false)
+	errors.Fatal(err)
+
+	modelFields := buildModelFields(mv)
+	t, err := template.ParseFiles(tmplfile)
+	if err == nil {
+		err = t.Execute(fd, modelFields)
+	}
+	fd.Close()
+	errors.Print(err)
 }
 
 type StructName struct {
@@ -113,14 +113,14 @@ func NewFieldName(model *StructName, field string) *FieldName {
 func NewStructName(name, table string) *StructName {
 	s := &StructName{
 		Name:           name,
-		Self:           types.AbridgeStringToLower(name),
-		UnexportedName: goutil.UnexportedCase(name),
+		Self:           strings2.ToLowerAbridge(name),
+		UnexportedName: goutil.ToUnexported(name),
 		UpperName:      strings.ToUpper(name),
 	}
 	if table != "" {
 		s.TableName = table
 	} else {
-		s.TableName = strings.ToLower(types.CamelString(name))
+		s.TableName = strings.ToLower(strings2.ToCamel(name))
 	}
 	return s
 }

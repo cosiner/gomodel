@@ -4,7 +4,7 @@ package gomodel
 import (
 	"database/sql"
 
-	"github.com/cosiner/gohper/lib/types"
+	"github.com/cosiner/gohper/bitset"
 )
 
 type (
@@ -27,7 +27,7 @@ type (
 )
 
 var (
-	FieldCount = types.BitCountUint
+	FieldCount = bitset.BitCountUint
 )
 
 // Open create a database manager and connect to database server

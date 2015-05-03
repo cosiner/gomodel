@@ -97,3 +97,6 @@ stmt, err := info.StmtById(newType, 0, sql_)
 rows, err := gomodel.StmtExec(stmt, err, args)
 gomodel.ScanOnce(rows, err, addrs...)
 ```
+
+# LICENSE
+MIT.

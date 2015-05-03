@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"reflect"
 
-	ref "github.com/cosiner/gohper/lib/reflect"
-
-	"github.com/cosiner/gohper/lib/goutil"
-	"github.com/cosiner/gohper/lib/types"
+	"github.com/cosiner/gohper/goutil"
+	"github.com/cosiner/gohper/reflect2"
+	"github.com/cosiner/gohper/strings2"
 )
 
 type (
@@ -196,7 +195,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 // if no tag specified, use field name's camel_case, disable a field by put 'notcol'
 // in field tag
 func parseTypeInfo(v Model, db *DB) *TypeInfo {
-	typ := ref.IndirectType(v)
+	typ := reflect2.IndirectType(v)
 	fieldNum := typ.NumField()
 	fields := make([]string, 0, fieldNum)
 	for i := 0; i < fieldNum; i++ {
@@ -214,7 +213,7 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 			if tagName != "" {
 				fieldName = tagName
 			}
-			fields = append(fields, types.SnakeString(fieldName))
+			fields = append(fields, strings2.ToSnake(fieldName))
 		}
 	}
 	return &TypeInfo{

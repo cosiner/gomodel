@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"strings"
 
-	"github.com/cosiner/gohper/lib/types"
+	"github.com/cosiner/gohper/strings2"
 )
 
 // Only tested for mysql
@@ -22,7 +22,7 @@ func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
 		if index >= 0 {
 			s = s[index+len(duplicate):]
 			if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
-				s, _ = types.TrimQuote(s[index:])
+				s, _ = strings2.TrimQuote(s[index:])
 				if e := newErrFunc(s); e != nil {
 					err = e
 				}

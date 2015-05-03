@@ -1,6 +1,8 @@
 package gomodel
 
-import "github.com/cosiner/gohper/lib/types"
+import (
+	"github.com/cosiner/gohper/strings2"
+)
 
 type (
 	Cols interface {
@@ -45,27 +47,27 @@ var (
 
 func (c *cols) String() string {
 	if c.str == "" {
-		c.str = types.SuffixJoin(c.cols, "", ",")
+		c.str = strings2.SuffixJoin(c.cols, "", ",")
 	}
 	return c.str
 }
 
 func (c *cols) Paramed() string {
 	if c.paramed == "" {
-		c.paramed = types.SuffixJoin(c.cols, "=?", ",")
+		c.paramed = strings2.SuffixJoin(c.cols, "=?", ",")
 	}
 	return c.paramed
 }
 
 func (c *cols) OnlyParam() string {
 	if c.onlyParamed == "" {
-		c.onlyParamed = types.RepeatJoin("?", ",", len(c.cols))
+		c.onlyParamed = strings2.RepeatJoin("?", ",", len(c.cols))
 	}
 	return c.onlyParamed
 }
 
 func (c *cols) Join(suffix, sep string) string {
-	return types.SuffixJoin(c.cols, suffix, sep)
+	return strings2.SuffixJoin(c.cols, suffix, sep)
 }
 
 func (c *cols) Length() int {
