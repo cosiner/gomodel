@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -72,16 +73,16 @@ func main() {
 			tmplfile = defTmplPath
 		}
 	}
-	fd, err := file.OpenOrCreate(outfile, false)
-	errors.Fatal(err)
-
-	modelFields := buildModelFields(mv)
-	t, err := template.ParseFiles(tmplfile)
-	if err == nil {
-		err = t.Execute(fd, modelFields)
-	}
-	fd.Close()
-	errors.Print(err)
+	errors.Fatal(
+		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
+			modelFields := buildModelFields(mv)
+			t, err := template.ParseFiles(tmplfile)
+			if err == nil {
+				err = t.Execute(fd, modelFields)
+			}
+			return err
+		}),
+	)
 }
 
 type StructName struct {
