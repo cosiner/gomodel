@@ -3,18 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"text/template"
 
 	"github.com/cosiner/gohper/defval"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/goutil"
+	"github.com/cosiner/gohper/goutil/ast"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/os2/path2"
 	"github.com/cosiner/gohper/strings2"
@@ -52,19 +49,17 @@ func main() {
 		errors.Fatal(file.Copy(defTmplPath, TmplName))
 		return
 	}
-	errors.CondDo(infile == "", errors.Err("No input file specified."), errors.Fatal)
-
-	models := strings2.TrimSplit(models, ",")
-	tree, err := parser.ParseFile(token.NewFileSet(), infile, nil, 0)
-	errors.Fatal(err)
+	errors.CondDo(infile == "", errors.Err("No input file specified."), errors.FatalAnyln)
 
 	mv := new(modelVisitor)
-	mv.addModelNeedParse(models)
-	mv.walk(tree)
+	mv.addModelNeedParse(strings2.TrimSplit(models, ","))
+
+	errors.Fatalln(mv.parse(infile))
 
 	if len(mv.models) == 0 {
 		return
 	}
+
 	defval.String(&outfile, infile)
 
 	if tmplfile == "" {
@@ -173,41 +168,28 @@ func (mv *modelVisitor) needParse(model string) bool {
 	return goutil.IsExported(model) && (len(mv.modelsParse) == 0 || mv.modelsParse[model])
 }
 
-// walk parse ast tree to find exported struct and it's fields
-func (mv *modelVisitor) walk(tree *ast.File) {
-	for _, decl := range tree.Decls { // Top Declare
-		if decl, is := decl.(*ast.GenDecl); is { // General Declare
-			if decl.Tok == token.TYPE { // Type Keyword
-				for _, spec := range decl.Specs {
-					spec, _ := spec.(*ast.TypeSpec)
-					if t, is := spec.Type.(*ast.StructType); is { // type struct
-						model := spec.Name.Name // model name
-						needParse := mv.needParse(model)
-						fmt.Println(model, needParse)
-						if !needParse {
-							continue
-						}
-						for _, f := range t.Fields.List { // model field
-							var table string
-							var tag reflect.StructTag
-							if f.Tag != nil {
-								tagValue := f.Tag.Value
-								tag = reflect.StructTag(tagValue[1 : len(tagValue)-1]) // trim first '`' and last '`'
-								if table = tag.Get("table"); table == "-" {
-									break
-								}
-							}
-							if f.Tag == nil || tag.Get("column") != "-" {
-								for _, ident := range f.Names {
-									if ident.IsExported() {
-										mv.add(model, table, ident.Name)
-									}
-								}
-							}
-						}
-					}
-				}
+// parse ast tree to find exported struct and it's fields
+func (mv *modelVisitor) parse(file string) error {
+	call := ast.Callback{
+		Struct: func(a *ast.Attrs) error {
+			needParse := mv.needParse(a.TypeName)
+			fmt.Println(a.TypeName, needParse)
+			if !needParse {
+				return ast.TYPE_END
 			}
-		}
+			return nil
+		},
+
+		StructField: func(a *ast.Attrs) error {
+			table := a.S.Tag.Get("table")
+			if table == "-" {
+				return ast.TYPE_END
+			}
+			if a.S.Tag.Get("column") != "-" {
+				mv.add(a.TypeName, table, a.S.Field)
+			}
+			return nil
+		},
 	}
+	return ast.ParseFile(file, call)
 }
