@@ -169,7 +169,7 @@ func (mv *modelVisitor) needParse(model string) bool {
 
 // parse ast tree to find exported struct and it's fields
 func (mv *modelVisitor) parse(file string) error {
-	call := ast.Callback{
+	return ast.Parser{
 		Struct: func(a *ast.Attrs) (err error) {
 			if !mv.needParse(a.TypeName) {
 				err = ast.TYPE_END
@@ -180,6 +180,5 @@ func (mv *modelVisitor) parse(file string) error {
 			}
 			return
 		},
-	}
-	return ast.ParseFile(file, call)
+	}.ParseFile(file)
 }
