@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,24 +170,15 @@ func (mv *modelVisitor) needParse(model string) bool {
 // parse ast tree to find exported struct and it's fields
 func (mv *modelVisitor) parse(file string) error {
 	call := ast.Callback{
-		Struct: func(a *ast.Attrs) error {
-			needParse := mv.needParse(a.TypeName)
-			fmt.Println(a.TypeName, needParse)
-			if !needParse {
-				return ast.TYPE_END
-			}
-			return nil
-		},
-
-		StructField: func(a *ast.Attrs) error {
-			table := a.S.Tag.Get("table")
-			if table == "-" {
-				return ast.TYPE_END
-			}
-			if a.S.Tag.Get("column") != "-" {
+		Struct: func(a *ast.Attrs) (err error) {
+			if !mv.needParse(a.TypeName) {
+				err = ast.TYPE_END
+			} else if table := a.S.Tag.Get("table"); table == "-" {
+				err = ast.TYPE_END
+			} else if a.S.Tag.Get("column") != "-" {
 				mv.add(a.TypeName, table, a.S.Field)
 			}
-			return nil
+			return
 		},
 	}
 	return ast.ParseFile(file, call)
