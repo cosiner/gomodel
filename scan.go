@@ -31,41 +31,50 @@ type Scanner interface {
 //
 // it's mostly designed for that customed search
 func ScanLimit(rows *sql.Rows, err error, s Scanner, rowCount int) error {
-	if err == nil {
-		index := -1
-		var ptrs []interface{}
-		for rows.Next() {
-			if index < 0 {
-				cols, _ := rows.Columns()
-				s.Make(rowCount)
-				ptrs = make([]interface{}, len(cols))
-			}
-			index++
-			s.Ptrs(index, ptrs)
-			if err = rows.Scan(ptrs...); err != nil {
-				rows.Close()
-				return err
-			}
-		}
-		if index < 0 {
-			err = sql.ErrNoRows
-		} else {
-			s.Make(index + 1)
-		}
-		rows.Close()
+	if err != nil {
+		return err
 	}
+
+	index := -1
+	var ptrs []interface{}
+	for rows.Next() {
+		if index < 0 {
+			cols, _ := rows.Columns()
+			s.Make(rowCount)
+			ptrs = make([]interface{}, len(cols))
+		}
+		index++
+		s.Ptrs(index, ptrs)
+
+		if err = rows.Scan(ptrs...); err != nil {
+			rows.Close()
+
+			return err
+		}
+	}
+
+	if index < 0 {
+		err = sql.ErrNoRows
+	} else {
+		s.Make(index + 1)
+	}
+	rows.Close()
+
 	return err
 }
 
 // ScanOnce scan once then close rows, if no data, sql.ErrNoRows was returned
 func ScanOnce(rows *sql.Rows, err error, ptrs ...interface{}) error {
-	if err == nil {
-		if rows.Next() {
-			err = rows.Scan(ptrs...)
-		} else {
-			err = sql.ErrNoRows
-		}
-		rows.Close()
+	if err != nil {
+		return err
 	}
+
+	if rows.Next() {
+		err = rows.Scan(ptrs...)
+	} else {
+		err = sql.ErrNoRows
+	}
+	rows.Close()
+
 	return err
 }

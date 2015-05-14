@@ -13,46 +13,57 @@ import (
 const PRIMARY_KEY = "PRIMARY"
 
 func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
+	if err == nil {
+		return nil
+	}
+
 	// Duplicate entry ... for key 'keyname'
 	const duplicate = "Duplicate"
 	const forKey = "for key"
-	if err != nil {
-		s := err.Error()
-		index := strings.Index(s, duplicate)
-		if index >= 0 {
-			s = s[index+len(duplicate):]
-			if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
-				s, _ = strings2.TrimQuote(s[index:])
-				if e := newErrFunc(s); e != nil {
-					err = e
-				}
+
+	s := err.Error()
+	index := strings.Index(s, duplicate)
+	if index >= 0 {
+		s = s[index+len(duplicate):]
+		if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
+			s, _ = strings2.TrimQuote(s[index:])
+
+			if e := newErrFunc(s); e != nil {
+				return e
 			}
 		}
 	}
+
 	return err
 }
 
 func ErrForForeignKey(err error, newErrFunc func(key string) error) error {
+	if err == nil {
+		return nil
+	}
+
 	// FOREIGN KEY (`keyname`)
 	const foreign = "FOREIGN KEY "
-	if err != nil {
-		s := err.Error()
-		index := strings.Index(s, foreign)
-		if index > 0 {
-			index += len(foreign) + 2
-			s = s[index:]
-			next := strings.IndexByte(s, ')') - 1
-			if e := newErrFunc(s[:next]); e != nil {
-				err = e
-			}
+
+	s := err.Error()
+	index := strings.Index(s, foreign)
+	if index > 0 {
+		index += len(foreign) + 2
+		s = s[index:]
+		next := strings.IndexByte(s, ')') - 1
+
+		if e := newErrFunc(s[:next]); e != nil {
+			return e
 		}
 	}
+
 	return err
 }
 
 func ErrForNoRows(err, newErr error) error {
-	if err == sql.ErrNoRows {
-		err = newErr
+	if err != sql.ErrNoRows {
+		return err
 	}
-	return err
+
+	return newErr
 }

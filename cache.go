@@ -28,6 +28,8 @@ type (
 		cache []map[uint]cacheItem // [type]map[id]{sql, stmt}
 		db    *DB
 	}
+
+	SQLPrinter func(string, ...interface{})
 )
 
 const (
@@ -44,19 +46,23 @@ var (
 	// Types defines the default sql types count, it's default applied to all
 	// models.
 	// Change it before register any models.
-	Types    = defaultTypeEnd
-	printSQL = func(_ bool, _ string) {}
+	Types                 = defaultTypeEnd
+	sqlPrinter SQLPrinter = func(string, ...interface{}) {}
 )
 
+func (p SQLPrinter) Print(fromcache bool, sql string) {
+	p("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
+}
+
 // SQLPrint enable sql print for each operation
-func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
-	if enable {
-		if formatter == nil {
-			formatter = log.Printf
-		}
-		printSQL = func(fromcache bool, sql string) {
-			formatter("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
-		}
+func SQLPrint(enable bool, printer func(formart string, v ...interface{})) {
+	if !enable {
+		return
+	}
+
+	sqlPrinter = printer
+	if sqlPrinter == nil {
+		sqlPrinter = log.Printf
 	}
 }
 
@@ -73,6 +79,7 @@ func SQLPrint(enable bool, formatter func(formart string, v ...interface{})) {
 //
 func NewID() *ID {
 	var i int32
+
 	return (*ID)(&i)
 }
 
@@ -91,9 +98,11 @@ func NewCacher(types uint, db *DB) *Cacher {
 		cache: make([]map[uint]cacheItem, types),
 		db:    db,
 	}
+
 	for i := uint(0); i < types; i++ {
 		c.cache[i] = make(map[uint]cacheItem)
 	}
+
 	return c
 }
 
@@ -109,6 +118,7 @@ func (c *Cacher) ExtendType(typ uint) uint {
 	if l := uint(len(c.cache)); typ > l {
 		cache := make([]map[uint]cacheItem, typ)
 		copy(cache, c.cache)
+
 		for ; l < typ; l++ {
 			cache[l] = make(map[uint]cacheItem)
 		}
@@ -116,6 +126,7 @@ func (c *Cacher) ExtendType(typ uint) uint {
 	} else {
 		c.cache = c.cache[:typ]
 	}
+
 	return typ - 1
 }
 
@@ -124,16 +135,22 @@ func (c *Cacher) ExtendType(typ uint) uint {
 // return
 func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error) {
 	if item, has := c.cache[typ][id]; has {
-		printSQL(true, item.sql)
+		sqlPrinter.Print(true, item.sql)
+
 		return item.stmt, nil
 	}
+
 	sql_ := create()
-	printSQL(false, sql_)
+	sqlPrinter.Print(false, sql_)
+
 	stmt, err := c.db.Prepare(sql_)
-	if err == nil {
-		c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
+	if err != nil {
+		return nil, err
 	}
-	return stmt, err
+
+	c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
+
+	return stmt, nil
 }
 
 // Types return the sql types count of current Cacher
@@ -143,20 +160,25 @@ func (c *Cacher) Types() uint {
 
 // GetStmt get sql and statement from cacher, if not found, "" and nil was returned
 func (c *Cacher) GetStmt(typ, id uint) (string, *sql.Stmt) {
-	if item, has := c.cache[typ][id]; has {
-		return item.sql, item.stmt
+	item, has := c.cache[typ][id]
+	if !has {
+		return "", nil
 	}
-	return "", nil
+
+	return item.sql, item.stmt
 }
 
 // SetStmt prepare a sql to statement, cache then return it
 func (c *Cacher) SetStmt(typ uint, id uint, sql string) (*sql.Stmt, error) {
 	stmt, err := c.db.Prepare(sql)
-	if err == nil {
-		c.cache[typ][id] = cacheItem{
-			sql:  sql,
-			stmt: stmt,
-		}
+	if err != nil {
+		return nil, err
 	}
-	return stmt, err
+
+	c.cache[typ][id] = cacheItem{
+		sql:  sql,
+		stmt: stmt,
+	}
+
+	return stmt, nil
 }

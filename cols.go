@@ -49,6 +49,7 @@ func (c *cols) String() string {
 	if c.str == "" {
 		c.str = strings2.SuffixJoin(c.cols, "", ",")
 	}
+
 	return c.str
 }
 
@@ -56,6 +57,7 @@ func (c *cols) Paramed() string {
 	if c.paramed == "" {
 		c.paramed = strings2.SuffixJoin(c.cols, "=?", ",")
 	}
+
 	return c.paramed
 }
 
@@ -63,6 +65,7 @@ func (c *cols) OnlyParam() string {
 	if c.onlyParamed == "" {
 		c.onlyParamed = strings2.RepeatJoin("?", ",", len(c.cols))
 	}
+
 	return c.onlyParamed
 }
 

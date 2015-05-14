@@ -97,11 +97,13 @@ func NewFieldName(model *StructName, field string) *FieldName {
 	f := &FieldName{
 		Name: field,
 	}
+
 	if useCamelCase {
 		f.ConstName = model.Name + field
 	} else {
 		f.ConstName = model.UpperName + "_" + strings.ToUpper(field)
 	}
+
 	return f
 }
 
@@ -112,11 +114,13 @@ func NewStructName(name, table string) *StructName {
 		UnexportedName: goutil.ToUnexported(name),
 		UpperName:      strings.ToUpper(name),
 	}
+
 	if table != "" {
 		s.TableName = table
 	} else {
 		s.TableName = strings.ToLower(strings2.ToCamel(name))
 	}
+
 	return s
 }
 
@@ -125,10 +129,12 @@ func buildModelFields(mv *modelVisitor) map[*StructName][]*FieldName {
 	names := make(map[*StructName][]*FieldName, len(models))
 	for model, fields := range mv.models {
 		modelStruct := NewStructName(model, mv.tables[model])
+
 		for _, name := range fields {
 			names[modelStruct] = append(names[modelStruct], NewFieldName(modelStruct, name))
 		}
 	}
+
 	return names
 }
 
@@ -178,6 +184,7 @@ func (mv *modelVisitor) parse(file string) error {
 			} else if a.S.Tag.Get("column") != "-" {
 				mv.add(a.TypeName, table, a.S.Field)
 			}
+
 			return
 		},
 	}.ParseFile(file)

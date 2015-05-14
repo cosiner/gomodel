@@ -49,13 +49,16 @@ func FieldsIdentity(numField uint, fields, whereFields uint) uint {
 // Stmt get sql from cache container, if cache not exist, then create new
 func (ti *TypeInfo) Stmt(typ, fields, whereFields uint, create SQLCreator) (*sql.Stmt, error) {
 	id := FieldsIdentity(ti.NumField, fields, whereFields)
+
 	sql_, stmt := ti.Cacher.GetStmt(typ, id)
 	if stmt == nil {
 		sql_ = create(fields, whereFields)
-		printSQL(false, sql_)
+		sqlPrinter.Print(false, sql_)
+
 		return ti.Cacher.SetStmt(typ, id, sql_)
 	}
-	printSQL(true, sql_)
+	sqlPrinter.Print(true, sql_)
+
 	return stmt, nil
 }
 
@@ -86,6 +89,7 @@ func (ti *TypeInfo) CountStmt(whereFields uint) (*sql.Stmt, error) {
 // InsertSQL create insert sql for given fields
 func (ti *TypeInfo) InsertSQL(fields, _ uint) string {
 	cols := ti.Cols(fields)
+
 	return fmt.Sprintf("INSERT INTO %s(%s) VALUES(%s)",
 		ti.Table,
 		cols.String(),
@@ -129,17 +133,21 @@ func (ti *TypeInfo) CountSQL(_, whereFields uint) string {
 }
 
 func (ti *TypeInfo) Where(fields uint) string {
-	if cols := ti.Cols(fields); cols.Length() != 0 {
-		return "WHERE " + cols.Join("=?", " AND ")
+	cols := ti.Cols(fields)
+	if cols.Length() == 0 {
+		return ""
 	}
-	return ""
+
+	return "WHERE " + cols.Join("=?", " AND ")
 }
 
 func (ti *TypeInfo) TypedWhere(fields uint) string {
-	if cols := ti.TypedCols(fields); cols.Length() != 0 {
-		return "WHERE " + cols.Join("=?", " AND ")
+	cols := ti.TypedCols(fields)
+	if cols.Length() != 0 {
+		return ""
 	}
-	return ""
+
+	return "WHERE " + cols.Join("=?", " AND ")
 }
 
 // Cols return column names for given fields
@@ -151,6 +159,7 @@ func (ti *TypeInfo) Cols(fields uint) Cols {
 		cols = ti.colNames(fields, "")
 		ti.colsCache[fields] = cols
 	}
+
 	return cols
 }
 
@@ -162,6 +171,7 @@ func (ti *TypeInfo) TypedCols(fields uint) Cols {
 		cols = ti.colNames(fields, ti.prefix)
 		ti.typedColsCache[fields] = cols
 	}
+
 	return cols
 }
 
@@ -180,6 +190,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 				index++
 			}
 		}
+
 		return &cols{cols: names}
 	} else if colCount == 1 {
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {
@@ -188,6 +199,7 @@ func (ti *TypeInfo) colNames(fields uint, prefix string) Cols {
 			}
 		}
 	}
+
 	return zeroCols
 }
 
@@ -198,6 +210,7 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 	typ := reflect2.IndirectType(v)
 	fieldNum := typ.NumField()
 	fields := make([]string, 0, fieldNum)
+
 	for i := 0; i < fieldNum; i++ {
 		field := typ.Field(i)
 		fieldName := field.Name
@@ -213,9 +226,11 @@ func parseTypeInfo(v Model, db *DB) *TypeInfo {
 			if tagName != "" {
 				fieldName = tagName
 			}
+
 			fields = append(fields, strings2.ToSnake(fieldName))
 		}
 	}
+
 	return &TypeInfo{
 		NumField:       uint(fieldNum),
 		Table:          v.Table(),
