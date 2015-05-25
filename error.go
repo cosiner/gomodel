@@ -1,6 +1,7 @@
 package gomodel
 
 import (
+	"database/sql"
 	"strings"
 
 	"github.com/cosiner/gohper/strings2"
@@ -12,6 +13,8 @@ import (
 const PRIMARY_KEY = "PRIMARY"
 
 type err struct{}
+
+type KeyFunc func(key string) error
 
 var Error = err{}
 
@@ -37,6 +40,15 @@ func (err) DuplicateKey(err error) string {
 	return ""
 }
 
+func (e err) WrapDuplicateKey(err error, keyfunc KeyFunc) error {
+	if key := e.DuplicateKey(err); key != "" {
+		if e := keyfunc(key); e != nil {
+			return e
+		}
+	}
+	return err
+}
+
 func (err) ForeignKey(err error) string {
 	if err == nil {
 		return ""
@@ -54,4 +66,21 @@ func (err) ForeignKey(err error) string {
 	}
 
 	return ""
+}
+
+func (e err) WrapForeignKey(err error, keyfunc KeyFunc) error {
+	if key := e.ForeignKey(err); key != "" {
+		if e := keyfunc(key); e != nil {
+			return e
+		}
+	}
+	return err
+}
+
+func (err) WrapNoRows(err, newErr error) error {
+	if err == sql.ErrNoRows {
+		return newErr
+	}
+
+	return err
 }
