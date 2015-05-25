@@ -1,7 +1,6 @@
 package gomodel
 
 import (
-	"database/sql"
 	"strings"
 
 	"github.com/cosiner/gohper/strings2"
@@ -9,12 +8,16 @@ import (
 
 // Only tested for mysql
 
-// PRIMARY_KEY for combined foreign key
+// PRIMARY_KEY for composite foreign key
 const PRIMARY_KEY = "PRIMARY"
 
-func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
+type err struct{}
+
+var Error = err{}
+
+func (err) DuplicateKey(err error) string {
 	if err == nil {
-		return nil
+		return ""
 	}
 
 	// Duplicate entry ... for key 'keyname'
@@ -27,19 +30,16 @@ func ErrForDuplicateKey(err error, newErrFunc func(key string) error) error {
 		s = s[index+len(duplicate):]
 		if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
 			s, _ = strings2.TrimQuote(s[index:])
-
-			if e := newErrFunc(s); e != nil {
-				return e
-			}
+			return s
 		}
 	}
 
-	return err
+	return ""
 }
 
-func ErrForForeignKey(err error, newErrFunc func(key string) error) error {
+func (err) ForeignKey(err error) string {
 	if err == nil {
-		return nil
+		return ""
 	}
 
 	// FOREIGN KEY (`keyname`)
@@ -50,20 +50,8 @@ func ErrForForeignKey(err error, newErrFunc func(key string) error) error {
 	if index > 0 {
 		index += len(foreign) + 2
 		s = s[index:]
-		next := strings.IndexByte(s, ')') - 1
-
-		if e := newErrFunc(s[:next]); e != nil {
-			return e
-		}
+		return s[:strings.IndexByte(s, ')')-1]
 	}
 
-	return err
-}
-
-func ErrForNoRows(err, newErr error) error {
-	if err != sql.ErrNoRows {
-		return err
-	}
-
-	return newErr
+	return ""
 }

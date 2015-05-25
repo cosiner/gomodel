@@ -51,7 +51,7 @@ var (
 )
 
 func (p SQLPrinter) Print(fromcache bool, sql string) {
-	p("[SQL]CachedSQL:%t, sql:%s\n", fromcache, sql)
+	p("Cached: %t, SQL: %s\n", fromcache, sql)
 }
 
 // SQLPrint enable sql print for each operation
