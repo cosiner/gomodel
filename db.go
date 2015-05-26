@@ -94,10 +94,10 @@ func FieldPtrs(fields uint, v Model) []interface{} {
 }
 
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
-	return db.InsertWith(v, fields, needId, FieldVals(fields, v))
+	return db.ArgsInsert(v, fields, needId, FieldVals(fields, v))
 }
 
-func (db *DB) InsertWith(v Model, fields uint, needId bool, args []interface{}) (int64, error) {
+func (db *DB) ArgsInsert(v Model, fields uint, needId bool, args []interface{}) (int64, error) {
 	stmt, err := db.TypeInfo(v).InsertStmt(fields)
 
 	return StmtExec(stmt, err, args, needId)
@@ -109,20 +109,20 @@ func (db *DB) Update(v Model, fields uint, whereFields uint) (int64, error) {
 	v.Vals(fields, args)
 	v.Vals(whereFields, args[c1:])
 
-	return db.UpdateWith(v, fields, whereFields, args)
+	return db.ArgsUpdate(v, fields, whereFields, args)
 }
 
-func (db *DB) UpdateWith(v Model, fields uint, whereFields uint, args []interface{}) (int64, error) {
+func (db *DB) ArgsUpdate(v Model, fields uint, whereFields uint, args []interface{}) (int64, error) {
 	stmt, err := db.TypeInfo(v).UpdateStmt(fields, whereFields)
 
 	return StmtExec(stmt, err, args, false)
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	return db.DeleteWith(v, whereFields, FieldVals(whereFields, v))
+	return db.ArgsDelete(v, whereFields, FieldVals(whereFields, v))
 }
 
-func (db *DB) DeleteWith(v Model, whereFields uint, args []interface{}) (int64, error) {
+func (db *DB) ArgsDelete(v Model, whereFields uint, args []interface{}) (int64, error) {
 	stmt, err := db.TypeInfo(v).DeleteStmt(whereFields)
 
 	return StmtExec(stmt, err, args, false)
@@ -202,11 +202,11 @@ func (db *DB) ScanLimit(v Model, s Scanner, fields, whereFields uint, start, cou
 
 // Count return count of rows for model, arguments was extracted from Model
 func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
-	return db.CountWith(v, whereFields, FieldVals(whereFields, v))
+	return db.ArgsCount(v, whereFields, FieldVals(whereFields, v))
 }
 
-// CountWith return count of rows for model use custome arguments
-func (db *DB) CountWith(v Model, whereFields uint,
+//Args Count return count of rows for model use custome arguments
+func (db *DB) ArgsCount(v Model, whereFields uint,
 	args []interface{}) (count uint, err error) {
 	ti := db.TypeInfo(v)
 

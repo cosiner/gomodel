@@ -163,6 +163,11 @@ func (ti *TypeInfo) Cols(fields uint) Cols {
 	return cols
 }
 
+// ColName return column name of field
+func (ti *TypeInfo) ColName(field uint) string {
+	return ti.Cols(field).String()
+}
+
 // TypedCols return column names for given fields with type's table name as prefix
 // like table.column
 func (ti *TypeInfo) TypedCols(fields uint) Cols {
