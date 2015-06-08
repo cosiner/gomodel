@@ -84,3 +84,11 @@ func (err) WrapNoRows(err, newErr error) error {
 
 	return err
 }
+
+func (err) WrapNoAffects(c int64, err, newErr error) error {
+	if err == nil && c == 0 {
+		return newErr
+	}
+
+	return err
+}

@@ -201,13 +201,13 @@ func (db *DB) ScanLimit(v Model, s Scanner, fields, whereFields uint, start, cou
 }
 
 // Count return count of rows for model, arguments was extracted from Model
-func (db *DB) Count(v Model, whereFields uint) (count uint, err error) {
+func (db *DB) Count(v Model, whereFields uint) (count int64, err error) {
 	return db.ArgsCount(v, whereFields, FieldVals(whereFields, v))
 }
 
 //Args Count return count of rows for model use custome arguments
 func (db *DB) ArgsCount(v Model, whereFields uint,
-	args []interface{}) (count uint, err error) {
+	args []interface{}) (count int64, err error) {
 	ti := db.TypeInfo(v)
 
 	stmt, err := ti.CountStmt(whereFields)
