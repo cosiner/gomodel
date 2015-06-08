@@ -39,6 +39,8 @@ const (
 	UPDATE
 	SELECT_LIMIT
 	SELECT_ONE
+	SELECT_ALL
+
 	defaultTypeEnd
 )
 

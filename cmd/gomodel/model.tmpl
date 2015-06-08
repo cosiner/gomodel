@@ -50,26 +50,29 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
     }
 }
 
-func {{$recv}} New() gomodel.Model {
-    return new({{$normalModel}})
-}
-
 type (
     {{$unexport}}s struct {
-        Items []{{$normalModel}}
+        Values []{{$normalModel}}
         Fields uint
     }
 )
 
 func (a *{{$unexport}}s) Make(count int) {
-    if a.Items == nil {
-        a.Items = make([]{{$normalModel}}, count)
+    if a.Values == nil {
+        a.Values = make([]{{$normalModel}}, count)
     } else {
-        a.Items = a.Items[:count]
+        a.Values = a.Values[:count]
     }
 }
 
-func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) {
-    a.Items[index].Ptrs(a.Fields, ptrs)
+func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) bool {
+    if len := len(a.Values); index == len {
+        values := make([]{{$normalModel}}, 2 * len)
+        copy(values, a.Values)
+        a.Values = values
+    }
+
+    a.Values[index].Ptrs(a.Fields, ptrs)
+    return true
 }
 {{end}}

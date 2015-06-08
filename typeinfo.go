@@ -82,6 +82,10 @@ func (ti *TypeInfo) SelectOneStmt(fields, whereFields uint) (*sql.Stmt, error) {
 	return ti.Stmt(SELECT_ONE, fields, whereFields, ti.SelectOneSQL)
 }
 
+func (ti *TypeInfo) SelectAllStmt(fields, whereFields uint) (*sql.Stmt, error) {
+	return ti.Stmt(SELECT_ALL, fields, whereFields, ti.SelectAllSQL)
+}
+
 func (ti *TypeInfo) CountStmt(whereFields uint) (*sql.Stmt, error) {
 	return ti.Stmt(SELECT_LIMIT, 0, whereFields, ti.CountSQL)
 }
@@ -120,6 +124,14 @@ func (ti *TypeInfo) SelectLimitSQL(fields, whereFields uint) string {
 // SelectLimitSQL create select sql for given fields
 func (ti *TypeInfo) SelectOneSQL(fields, whereFields uint) string {
 	return fmt.Sprintf("SELECT %s FROM %s %s LIMIT 1",
+		ti.Cols(fields),
+		ti.Table,
+		ti.Where(whereFields))
+}
+
+// SelectAllSQL create select sql for given fields
+func (ti *TypeInfo) SelectAllSQL(fields, whereFields uint) string {
+	return fmt.Sprintf("SELECT %s FROM %s %s",
 		ti.Cols(fields),
 		ti.Table,
 		ti.Where(whereFields))
