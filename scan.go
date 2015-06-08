@@ -84,7 +84,7 @@ func (sc Scanner) multiple(rows *sql.Rows, s Store, count int, all bool) error {
 		err   error
 	)
 	for rows.Next() && (index < count || all) {
-		if index < 0 {
+		if index == 0 {
 			cols, _ := rows.Columns()
 			s.Make(count)
 			ptrs = make([]interface{}, len(cols))

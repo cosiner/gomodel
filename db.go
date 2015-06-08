@@ -160,7 +160,7 @@ func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
-	stmt, err := db.TypeInfo(v).SelectLimitStmt(fields, whereFields)
+	stmt, err := db.TypeInfo(v).SelectAllStmt(fields, whereFields)
 	scanner, rows := StmtQuery(stmt, err, args...)
 
 	return scanner.All(rows, s, db.ModelCount)
