@@ -96,7 +96,7 @@ func FieldPtrs(fields uint, v Model) []interface{} {
 }
 
 func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
-	return db.ArgsInsert(v, fields, needId, FieldVals(fields, v))
+	return db.ArgsInsert(v, fields, needId, FieldVals(fields, v)...)
 }
 
 func (db *DB) ArgsInsert(v Model, fields uint, needId bool, args ...interface{}) (int64, error) {
@@ -111,7 +111,7 @@ func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
 	v.Vals(fields, args)
 	v.Vals(whereFields, args[c1:])
 
-	return db.ArgsUpdate(v, fields, whereFields, args)
+	return db.ArgsUpdate(v, fields, whereFields, args...)
 }
 
 func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
@@ -121,7 +121,7 @@ func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{})
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	return db.ArgsDelete(v, whereFields, FieldVals(whereFields, v))
+	return db.ArgsDelete(v, whereFields, FieldVals(whereFields, v)...)
 }
 
 func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
@@ -144,7 +144,7 @@ func (db *DB) Limit(s Store, v Model, fields, whereFields uint, start, count int
 	v.Vals(whereFields, args)
 	args[c], args[c+1] = start, count
 
-	return db.ArgsLimit(s, v, fields, whereFields, args)
+	return db.ArgsLimit(s, v, fields, whereFields, args...)
 }
 
 func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
@@ -155,7 +155,7 @@ func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...inte
 }
 
 func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
-	return db.ArgsAll(s, v, fields, whereFields, FieldVals(whereFields, v))
+	return db.ArgsAll(s, v, fields, whereFields, FieldVals(whereFields, v)...)
 }
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
@@ -168,7 +168,7 @@ func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interf
 
 // Count return count of rows for model, arguments was extracted from Model
 func (db *DB) Count(v Model, whereFields uint) (count int64, err error) {
-	return db.ArgsCount(v, whereFields, FieldVals(whereFields, v))
+	return db.ArgsCount(v, whereFields, FieldVals(whereFields, v)...)
 }
 
 //Args Count return count of rows for model use custome arguments
@@ -185,7 +185,7 @@ func (db *DB) ArgsCount(v Model, whereFields uint,
 }
 
 // ExecUpdate execute a update operation, return resolved result
-func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (ret int64, err error) {
+func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (int64, error) {
 	res, err := db.Exec(s, args...)
 
 	return ResolveResult(res, err, needId)
