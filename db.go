@@ -117,7 +117,7 @@ func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
 func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := db.TypeInfo(v).UpdateStmt(fields, whereFields)
 
-	return StmtExec(stmt, err, false, args...)
+	return StmtUpdate(stmt, err, args...)
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
@@ -127,7 +127,7 @@ func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := db.TypeInfo(v).DeleteStmt(whereFields)
 
-	return StmtExec(stmt, err, false, args...)
+	return StmtUpdate(stmt, err, args...)
 }
 
 // One select one row from database
@@ -191,6 +191,10 @@ func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (ret int64,
 	return ResolveResult(res, err, needId)
 }
 
+func StmtUpdate(stmt *sql.Stmt, err error, args ...interface{}) (int64, error) {
+	return StmtUpdate(stmt, err, args...)
+}
+
 // StmtExec execute stmt with given arguments and resolve the result if error is nil
 func StmtExec(stmt *sql.Stmt, err error, needId bool, args ...interface{}) (int64, error) {
 	if err != nil {
@@ -198,7 +202,6 @@ func StmtExec(stmt *sql.Stmt, err error, needId bool, args ...interface{}) (int6
 	}
 
 	res, err := stmt.Exec(args...)
-
 	return ResolveResult(res, err, needId)
 }
 
