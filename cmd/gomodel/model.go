@@ -19,7 +19,6 @@ func NewModel(name, table string) *Model {
 		Name:       name,
 		Self:       strings2.ToLowerAbridge(name),
 		Unexported: goutil.ToUnexported(name),
-		Upper:      strings.ToUpper(name),
 		Table:      table,
 	}
 }
@@ -37,7 +36,7 @@ func NewField(model *Model, field string) *Field {
 	if useCamelCase {
 		f.Const = model.Name + field
 	} else {
-		f.Const = model.Upper + "_" + strings.ToUpper(field)
+		f.Const = strings.ToUpper(model.Name + "_" + field)
 	}
 
 	return f

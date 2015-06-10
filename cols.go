@@ -37,13 +37,11 @@ type (
 	// singleCol means only one column
 	singleCol string
 
-	// nilCOls means there is no columns
-	nilCols string
+	// emptyCols means there is no columns
+	emptyCols string
 )
 
-var (
-	zeroCols Cols = nilCols("")
-)
+const _emptyCols = emptyCols("")
 
 func (c *cols) String() string {
 	if c.str == "" {
@@ -97,22 +95,22 @@ func (c singleCol) Length() int {
 	return 1
 }
 
-func (nilCols) String() string {
+func (emptyCols) String() string {
 	return ""
 }
 
-func (nilCols) Paramed() string {
+func (emptyCols) Paramed() string {
 	return ""
 }
 
-func (nilCols) OnlyParam() string {
+func (emptyCols) OnlyParam() string {
 	return ""
 }
 
-func (nilCols) Join(_, _ string) string {
+func (emptyCols) Join(_, _ string) string {
 	return ""
 }
 
-func (nilCols) Length() int {
+func (emptyCols) Length() int {
 	return 0
 }
