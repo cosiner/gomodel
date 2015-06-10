@@ -192,7 +192,6 @@ func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (int64, err
 // Exec execute a update operation, return resolved result
 func (db *DB) Exec(s string, needId bool, args ...interface{}) (int64, error) {
 	res, err := db.DB.Exec(s, args...)
->>>>>>> dev
 
 	return ResolveResult(res, err, needId)
 }
