@@ -1,7 +1,7 @@
 package testdata
 
-type User struct {
-	Name string `table:"us" column:"n"`
-	Id   int    `column:"i"`
+type UserInfo struct {
+	Name string `table:"userInfo"`
+	Id   int
 	Age  int
 }

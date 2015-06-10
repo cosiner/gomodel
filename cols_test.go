@@ -8,22 +8,28 @@ import (
 )
 
 func TestCols(t *testing.T) {
-	tt := testing2.Wrap(t)
 	var cols Cols = &cols{cols: []string{"id", "age", "name"}}
-	tt.Eq(3, cols.Length())
-	tt.Eq("?,?,?", strings2.RemoveSpace(cols.OnlyParam()))
-	tt.Eq("id,age,name", strings2.RemoveSpace(cols.String()))
-	tt.Eq("id=?,age=?,name=?", strings2.RemoveSpace(cols.Paramed()))
+
+	testing2.Eq(t, 3, cols.Length())
+	testing2.
+		Expect("?,?,?").Arg(cols.OnlyParam()).
+		Expect("id,age,name").Arg(cols.String()).
+		Expect("id=?,age=?,name=?").Arg(cols.Paramed()).
+		Run(t, strings2.RemoveSpace)
 
 	cols = singleCol("id")
-	tt.Eq(1, cols.Length())
-	tt.Eq("?", strings2.RemoveSpace(cols.OnlyParam()))
-	tt.Eq("id", strings2.RemoveSpace(cols.String()))
-	tt.Eq("id=?", strings2.RemoveSpace(cols.Paramed()))
+	testing2.Eq(t, 1, cols.Length())
+	testing2.
+		Expect("?").Arg(cols.OnlyParam()).
+		Expect("id").Arg(cols.String()).
+		Expect("id=?").Arg(cols.Paramed()).
+		Run(t, strings2.RemoveSpace)
 
-	cols = zeroCols
-	tt.Eq(0, cols.Length())
-	tt.Eq("", strings2.RemoveSpace(cols.OnlyParam()))
-	tt.Eq("", strings2.RemoveSpace(cols.String()))
-	tt.Eq("", strings2.RemoveSpace(cols.Paramed()))
+	cols = _emptyCols
+	testing2.Eq(t, 0, cols.Length())
+	testing2.
+		Expect("").Arg(cols.OnlyParam()).
+		Expect("").Arg(cols.String()).
+		Expect("").Arg(cols.Paramed()).
+		Run(t, strings2.RemoveSpace)
 }

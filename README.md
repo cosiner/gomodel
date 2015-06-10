@@ -14,7 +14,7 @@ $ gomodel -cp # copy model.tmpl to default path $HOME/.config/go/model.tmpl
 # Example
 ```Go
 type User struct {
-    Id int
+    Id int `column:"user_id"`
     Age int
     Name string
 }

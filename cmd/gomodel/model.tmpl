@@ -1,23 +1,23 @@
 {{range $model, $fields := .}}
-{{$normalModel := $model.Name}}
-{{$unexport := $model.UnexportedName}}
-{{$upperModel := $model.UpperName}}
+{{$normal := $model.Name}}
+{{$unexport := $model.Unexported}}
 {{$self := $model.Self}}
-{{$recv := (printf "(%s *%s)" $self $normalModel)}}
+{{$recv := (printf "(%s *%s)" $self $normal)}}
 const (
-    {{range $index, $field := $fields}}{{with $field}}{{.ConstName}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
+    {{range $index, $field := $fields}}{{with $field}}{{.Const}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
     {{end}}{{$unexport}}FieldEnd = iota
     {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
-    {{range $index, $field := $fields}}{{with $field}}{{$unexport}}FieldsExcp{{.Name}} = {{$unexport}}FieldsAll &(^{{.ConstName}}){{end}}
+    {{range $index, $field := $fields}}{{with $field}}{{$unexport}}FieldsExcp{{.Name}} = {{$unexport}}FieldsAll &(^{{.Const}}){{end}}
     {{end}}
 )
 var (
     // DB is the global DB instance
-    {{$unexport}}Info = DB.TypeInfo(&{{$normalModel}}{})
+    {{$unexport}}Instance = &{{$normal}}{}
+    {{$unexport}}Table = DB.Table({{$unexport}}Instance)
 )
 
 func {{$recv}} Table() string {
-    return "{{$model.TableName}}"
+    return "{{$model.Table}}"
 }
 
 func {{$recv}} Vals(fields uint, vals []interface{}) {
@@ -27,7 +27,7 @@ func {{$recv}} Vals(fields uint, vals []interface{}) {
         {{end}}
     } else {
        index := 0
-    {{range $fields}} if fields&{{.ConstName}} != 0 {
+    {{range $fields}} if fields&{{.Const}} != 0 {
         vals[index] = {{$self}}.{{.Name}}
         index++
         }
@@ -42,7 +42,7 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
         {{end}}
          } else {
         index := 0
-        {{range $fields}} if fields&{{.ConstName}} != 0 {
+        {{range $fields}} if fields&{{.Const}} != 0 {
             ptrs[index] = &({{$self}}.{{.Name}})
             index++
         }
@@ -52,14 +52,14 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
 
 type (
     {{$unexport}}s struct {
-        Values []{{$normalModel}}
+        Values []{{$normal}}
         Fields uint
     }
 )
 
 func (a *{{$unexport}}s) Make(count int) {
     if a.Values == nil {
-        a.Values = make([]{{$normalModel}}, count)
+        a.Values = make([]{{$normal}}, count)
     } else {
         a.Values = a.Values[:count]
     }
@@ -67,7 +67,7 @@ func (a *{{$unexport}}s) Make(count int) {
 
 func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) bool {
     if len := len(a.Values); index == len {
-        values := make([]{{$normalModel}}, 2 * len)
+        values := make([]{{$normal}}, 2 * len)
         copy(values, a.Values)
         a.Values = values
     }
