@@ -21,7 +21,7 @@ type (
 		// driver string
 		*sql.DB
 		tables map[string]*Table
-		*Cacher
+		Cacher
 
 		ModelCount int
 	}

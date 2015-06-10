@@ -95,8 +95,8 @@ func (i *ID) New() uint {
 //
 // the DB instance and each TypeInfo already embed a Cacher, typically, it's not
 // necessary to call this
-func NewCacher(types uint, db *DB) *Cacher {
-	c := &Cacher{
+func NewCacher(types uint, db *DB) Cacher {
+	c := Cacher{
 		cache: make([]map[uint]cacheItem, types),
 		db:    db,
 	}

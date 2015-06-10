@@ -21,14 +21,14 @@ type (
 	// you should not use a empty fields for limit select, that will conflict with
 	// count sql and get the wrong sql statement.
 	Table struct {
-		Name    string
-		Num     uint
-		columns []string
+		Name string
+		Num  uint
+		Cacher
 
-		prefix         string
+		columns        []string
+		prefix         string // Name + "."
 		colsCache      map[uint]Cols
 		typedColsCache map[uint]Cols
-		*Cacher
 	}
 )
 
@@ -252,11 +252,11 @@ func parse(v Model, db *DB) *Table {
 	}
 
 	return &Table{
-		Num:  uint(num),
-		Name: v.Table(),
+		Num:    uint(num),
+		Name:   v.Table(),
+		Cacher: NewCacher(Types, db),
 
 		columns:        cols,
-		Cacher:         NewCacher(Types, db),
 		prefix:         v.Table() + ".",
 		colsCache:      make(map[uint]Cols),
 		typedColsCache: make(map[uint]Cols),
