@@ -17,18 +17,15 @@ import (
 )
 
 var (
-	outfile      string
-	tmplfile     string
-	copyTmpl     bool
-	useCamelCase bool
+	outfile  string
+	tmplfile string
+	copyTmpl bool
 )
 
 func init() {
 	flag.StringVar(&outfile, "o", "", "outtput file, default model_gen.go")
 	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
 
-	// make it true to enable default CamelCase
-	flag.BoolVar(&useCamelCase, "cc", false, "use CamelCase of constants")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 
 	flag.Parse()
@@ -161,9 +158,9 @@ func (mv modelVisitor) buildModelFields() map[*Model][]*Field {
 
 	for model, table := range mv {
 		m := NewModel(model, table.Name)
-
-		for field := range table.Fields.Indexes {
-			names[m] = append(names[m], NewField(m, field))
+		fields := table.Fields
+		for field, index := range fields.Indexes {
+			names[m] = append(names[m], NewField(m, field, fields.Elements[index].(string)))
 		}
 	}
 

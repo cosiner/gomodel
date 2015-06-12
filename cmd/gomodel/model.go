@@ -11,6 +11,7 @@ type Model struct {
 	Name       string // struct's normal name
 	Self       string
 	Unexported string
+	Upper      string
 	Table      string
 }
 
@@ -19,25 +20,21 @@ func NewModel(name, table string) *Model {
 		Name:       name,
 		Self:       strings2.ToLowerAbridge(name),
 		Unexported: goutil.ToUnexported(name),
+		Upper:      strings.ToUpper(name),
 		Table:      table,
 	}
 }
 
 type Field struct {
-	Name  string // field's normal name
-	Const string // field's const name is in STRUCTNAME_FIELDNAME case
+	Name   string // field's normal name
+	Upper  string // field's const name is in STRUCTNAME_FIELDNAME case
+	Column string
 }
 
-func NewField(model *Model, field string) *Field {
-	f := &Field{
-		Name: field,
+func NewField(model *Model, field, col string) *Field {
+	return &Field{
+		Name:   field,
+		Upper:  strings.ToUpper(field),
+		Column: col,
 	}
-
-	if useCamelCase {
-		f.Const = model.Name + field
-	} else {
-		f.Const = strings.ToUpper(model.Name + "_" + field)
-	}
-
-	return f
 }

@@ -194,14 +194,14 @@ func (db *DB) ArgsCount(v Model, whereFields uint,
 
 // ExecUpdate execute a update operation, return resolved result
 func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (int64, error) {
-	return db.Exec(s, false, args...)
+	return db.Exec(s, RES_ROWS, args...)
 }
 
 // Exec execute a update operation, return resolved result
-func (db *DB) Exec(s string, needId bool, args ...interface{}) (int64, error) {
+func (db *DB) Exec(s string, typ ResultType, args ...interface{}) (int64, error) {
 	res, err := db.DB.Exec(s, args...)
 
-	return ResolveResult(res, err, needId)
+	return ResolveResult(res, err, typ)
 }
 
 // StmtUpdate always returl the count of affected rows

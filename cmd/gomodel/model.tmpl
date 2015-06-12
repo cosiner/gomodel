@@ -1,15 +1,24 @@
 {{range $model, $fields := .}}
 {{$normal := $model.Name}}
 {{$unexport := $model.Unexported}}
+{{$upper := $model.Upper}}
 {{$self := $model.Self}}
 {{$recv := (printf "(%s *%s)" $self $normal)}}
 const (
-    {{range $index, $field := $fields}}{{with $field}}{{.Const}}{{end}} {{if eq $index  0}} uint = 1 << iota {{end}}
-    {{end}}{{$unexport}}FieldEnd = iota
+    {{range $index, $field := $fields}}
+        {{$upper}}_${{$field.Upper}} {{if eq $index  0}} uint = 1 << iota {{end}}
+    {{end}}
+    {{$unexport}}FieldEnd = iota
     {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
-    {{range $index, $field := $fields}}{{with $field}}{{$unexport}}FieldsExcp{{.Name}} = {{$unexport}}FieldsAll &(^{{.Const}}){{end}}
+    {{range $index, $field := $fields}}
+        {{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$field.Upper}})
+    {{end}}
+
+    {{range $index, $field := $fields}}
+        {{$unexport}}Col{{$field.Name}} = "{{$field.Column}}"
     {{end}}
 )
+
 var (
     // DB is the global DB instance
     {{$unexport}}Instance = &{{$normal}}{}
@@ -27,7 +36,7 @@ func {{$recv}} Vals(fields uint, vals []interface{}) {
         {{end}}
     } else {
        index := 0
-    {{range $fields}} if fields&{{.Const}} != 0 {
+    {{range $fields}} if fields&{{.Upper}} != 0 {
         vals[index] = {{$self}}.{{.Name}}
         index++
         }
@@ -42,7 +51,7 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
         {{end}}
          } else {
         index := 0
-        {{range $fields}} if fields&{{.Const}} != 0 {
+        {{range $fields}} if fields&{{.Upper}} != 0 {
             ptrs[index] = &({{$self}}.{{.Name}})
             index++
         }
