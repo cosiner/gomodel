@@ -104,7 +104,7 @@ func FieldPtrs(v Model, fields uint) []interface{} {
 }
 
 func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
-	return db.ArgsInsert(v, fields, typ, FieldVals(v, fields))
+	return db.ArgsInsert(v, fields, typ, FieldVals(v, fields)...)
 }
 
 func (db *DB) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
@@ -129,7 +129,7 @@ func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{})
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	return db.ArgsDelete(v, whereFields, FieldVals(v, whereFields))
+	return db.ArgsDelete(v, whereFields, FieldVals(v, whereFields)...)
 }
 
 func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
@@ -163,7 +163,7 @@ func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...inte
 }
 
 func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
-	return db.ArgsAll(s, v, fields, whereFields, FieldVals(v, whereFields))
+	return db.ArgsAll(s, v, fields, whereFields, FieldVals(v, whereFields)...)
 }
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
@@ -176,7 +176,7 @@ func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interf
 
 // Count return count of rows for model, arguments was extracted from Model
 func (db *DB) Count(v Model, whereFields uint) (count int64, err error) {
-	return db.ArgsCount(v, whereFields, FieldVals(v, whereFields))
+	return db.ArgsCount(v, whereFields, FieldVals(v, whereFields)...)
 }
 
 //Args Count return count of rows for model use custome arguments
