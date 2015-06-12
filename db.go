@@ -25,6 +25,14 @@ type (
 
 		ModelCount int
 	}
+
+	ResultType int
+)
+
+const (
+	RES_NO ResultType = iota
+	RES_ID
+	RES_ROWS
 )
 
 var (
@@ -95,14 +103,14 @@ func FieldPtrs(v Model, fields uint) []interface{} {
 	return ptrs
 }
 
-func (db *DB) Insert(v Model, fields uint, needId bool) (int64, error) {
-	return db.ArgsInsert(v, fields, needId, FieldVals(v, fields))
+func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
+	return db.ArgsInsert(v, fields, typ, FieldVals(v, fields))
 }
 
-func (db *DB) ArgsInsert(v Model, fields uint, needId bool, args ...interface{}) (int64, error) {
+func (db *DB) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.Table(v).StmtInsert(fields)
 
-	return StmtExec(stmt, err, needId, args...)
+	return StmtExec(stmt, err, typ, args...)
 }
 
 func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
@@ -196,18 +204,19 @@ func (db *DB) Exec(s string, needId bool, args ...interface{}) (int64, error) {
 	return ResolveResult(res, err, needId)
 }
 
+// StmtUpdate always returl the count of affected rows
 func StmtUpdate(stmt *sql.Stmt, err error, args ...interface{}) (int64, error) {
-	return StmtUpdate(stmt, err, args...)
+	return StmtExec(stmt, err, RES_ROWS, args...)
 }
 
 // StmtExec execute stmt with given arguments and resolve the result if error is nil
-func StmtExec(stmt *sql.Stmt, err error, needId bool, args ...interface{}) (int64, error) {
+func StmtExec(stmt *sql.Stmt, err error, typ ResultType, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
 
 	res, err := stmt.Exec(args...)
-	return ResolveResult(res, err, needId)
+	return ResolveResult(res, err, typ)
 }
 
 // StmtQuery execute the query stmt, error stored in Scanner
@@ -226,14 +235,19 @@ func StmtQuery(stmt *sql.Stmt, err error, args ...interface{}) (Scanner, *sql.Ro
 
 // ResolveResult resolve sql result, if need id, return last insert id
 // else return affected rows count
-func ResolveResult(res sql.Result, err error, needId bool) (int64, error) {
+func ResolveResult(res sql.Result, err error, typ ResultType) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
 
-	if needId {
+	switch typ {
+	case RES_NO:
+		return 0, nil
+	case RES_ID:
 		return res.LastInsertId()
-	} else {
+	case RES_ROWS:
 		return res.RowsAffected()
+	default:
+		panic("unexpected result type")
 	}
 }
