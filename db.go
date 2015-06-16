@@ -213,6 +213,7 @@ func (db *DB) Begin() (*Tx, error) {
 
 	return &Tx{
 		Tx: tx,
+		db: db,
 	}, nil
 }
 
