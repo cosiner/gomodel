@@ -23,7 +23,8 @@ type (
 		tables map[string]*Table
 		Cacher
 
-		ModelCount int
+		// initial models count for 'All'
+		InitialModels int
 	}
 
 	ResultType int
@@ -50,8 +51,8 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 // New create a new db structure
 func NewDB() *DB {
 	return &DB{
-		tables:     make(map[string]*Table),
-		ModelCount: 10,
+		tables:        make(map[string]*Table),
+		InitialModels: 10,
 	}
 }
 
@@ -65,7 +66,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	db_.SetMaxIdleConns(maxIdle)
 	db_.SetMaxOpenConns(maxOpen)
 	db.DB = db_
-	db.Cacher = NewCacher(Types, db) // use global types count
+	db.Cacher = NewCacher(Types) // use global types count
 
 	return nil
 }
@@ -108,7 +109,7 @@ func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
 }
 
 func (db *DB) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtInsert(fields)
+	stmt, err := db.Table(v).StmtInsert(db.DB, fields)
 
 	return StmtExec(stmt, err, typ, args...)
 }
@@ -123,7 +124,7 @@ func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
 }
 
 func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtUpdate(fields, whereFields)
+	stmt, err := db.Table(v).StmtUpdate(db.DB, fields, whereFields)
 
 	return StmtUpdate(stmt, err, args...)
 }
@@ -133,14 +134,14 @@ func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 }
 
 func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtDelete(whereFields)
+	stmt, err := db.Table(v).StmtDelete(db.DB, whereFields)
 
 	return StmtUpdate(stmt, err, args...)
 }
 
 // One select one row from database
 func (db *DB) One(v Model, fields, whereFields uint) error {
-	stmt, err := db.Table(v).StmtOne(fields, whereFields)
+	stmt, err := db.Table(v).StmtOne(db.DB, fields, whereFields)
 	scanner, rows := StmtQuery(stmt, err, FieldVals(v, whereFields)...)
 
 	return scanner.One(rows, FieldPtrs(v, fields)...)
@@ -156,7 +157,7 @@ func (db *DB) Limit(s Store, v Model, fields, whereFields uint, start, count int
 }
 
 func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
-	stmt, err := db.Table(v).StmtLimit(fields, whereFields)
+	stmt, err := db.Table(v).StmtLimit(db.DB, fields, whereFields)
 	scanner, rows := StmtQuery(stmt, err, args...)
 
 	return scanner.Limit(rows, s, args[len(args)-1].(int))
@@ -168,10 +169,10 @@ func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
-	stmt, err := db.Table(v).StmtAll(fields, whereFields)
+	stmt, err := db.Table(v).StmtAll(db.DB, fields, whereFields)
 	scanner, rows := StmtQuery(stmt, err, args...)
 
-	return scanner.All(rows, s, db.ModelCount)
+	return scanner.All(rows, s, db.InitialModels)
 }
 
 // Count return count of rows for model, arguments was extracted from Model
@@ -184,7 +185,7 @@ func (db *DB) ArgsCount(v Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
 	t := db.Table(v)
 
-	stmt, err := t.StmtCount(whereFields)
+	stmt, err := t.StmtCount(db.DB, whereFields)
 	scanner, rows := StmtQuery(stmt, err, args...)
 
 	err = scanner.One(rows, &count)
@@ -202,6 +203,17 @@ func (db *DB) Exec(s string, typ ResultType, args ...interface{}) (int64, error)
 	res, err := db.DB.Exec(s, args...)
 
 	return ResolveResult(res, err, typ)
+}
+
+func (db *DB) Begin() (*Tx, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Tx{
+		Tx: tx,
+	}, nil
 }
 
 // StmtUpdate always returl the count of affected rows

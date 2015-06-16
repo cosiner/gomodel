@@ -16,6 +16,10 @@ type (
 		stmt *sql.Stmt
 	}
 
+	Preparer interface {
+		Prepare(sql string) (*sql.Stmt, error)
+	}
+
 	// Cacher store all the sql, statement by sql type and id
 	// typically, the sql id of predefied sql type is
 	// fields << numField( of Model) | whereFields,
@@ -26,7 +30,6 @@ type (
 	// FieldIdentity(fields, whereFields) if possible
 	Cacher struct {
 		cache []map[uint]cacheItem // [type]map[id]{sql, stmt}
-		db    *DB
 	}
 
 	SQLPrinter func(string, ...interface{})
@@ -95,10 +98,9 @@ func (i *ID) New() uint {
 //
 // the DB instance and each TypeInfo already embed a Cacher, typically, it's not
 // necessary to call this
-func NewCacher(types uint, db *DB) Cacher {
+func NewCacher(types uint) Cacher {
 	c := Cacher{
 		cache: make([]map[uint]cacheItem, types),
-		db:    db,
 	}
 
 	for i := uint(0); i < types; i++ {
@@ -135,7 +137,7 @@ func (c *Cacher) ExtendType(typ uint) uint {
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error) {
+func (c *Cacher) StmtById(p Preparer, typ, id uint, create func() string) (*sql.Stmt, error) {
 	if item, has := c.cache[typ][id]; has {
 		sqlPrinter.Print(true, item.sql)
 
@@ -145,7 +147,7 @@ func (c *Cacher) StmtById(typ, id uint, create func() string) (*sql.Stmt, error)
 	sql_ := create()
 	sqlPrinter.Print(false, sql_)
 
-	stmt, err := c.db.Prepare(sql_)
+	stmt, err := p.Prepare(sql_)
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +173,8 @@ func (c *Cacher) GetStmt(typ, id uint) (string, *sql.Stmt) {
 }
 
 // SetStmt prepare a sql to statement, cache then return it
-func (c *Cacher) SetStmt(typ uint, id uint, sql string) (*sql.Stmt, error) {
-	stmt, err := c.db.Prepare(sql)
+func (c *Cacher) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, error) {
+	stmt, err := p.Prepare(sql)
 	if err != nil {
 		return nil, err
 	}
@@ -183,4 +185,14 @@ func (c *Cacher) SetStmt(typ uint, id uint, sql string) (*sql.Stmt, error) {
 	}
 
 	return stmt, nil
+}
+
+func (c *Cacher) Prepare(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
+	item, has := c.cache[typ][id]
+	if !has {
+		return "", nil, nil
+	}
+
+	stmt, err := p.Prepare(item.sql)
+	return item.sql, stmt, err
 }
