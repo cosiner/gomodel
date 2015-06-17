@@ -95,7 +95,7 @@ func (t *Table) StmtCount(p Preparer, whereFields uint) (*sql.Stmt, error) {
 func (t *Table) Prepare(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt, err := t.Cacher.Prepare(p, typ, id)
+	sql_, stmt, err := t.Cacher.PrepareStmt(p, typ, id)
 	if err != nil {
 		return nil, err
 	}

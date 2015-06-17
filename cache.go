@@ -187,7 +187,7 @@ func (c *Cacher) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, 
 	return stmt, nil
 }
 
-func (c *Cacher) Prepare(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
+func (c *Cacher) PrepareStmt(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
 	item, has := c.cache[typ][id]
 	if !has {
 		return "", nil, nil
