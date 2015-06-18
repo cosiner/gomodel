@@ -95,21 +95,22 @@ func (t *Table) StmtCount(p Preparer, whereFields uint) (*sql.Stmt, error) {
 func (t *Table) Prepare(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt, err := t.Cacher.PrepareStmt(p, typ, id)
+	sql_, stmt, err := t.Cacher.PrepareSQL(p, typ, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if stmt == nil {
 		sql_ = build(fields, whereFields)
+		t.Cacher.SetPrepareSQL(typ, id, sql_)
 		sqlPrinter.Print(false, sql_)
 
-		return p.Prepare(sql_)
+		stmt, err = p.Prepare(sql_)
+	} else {
+		sqlPrinter.Print(true, sql_)
 	}
 
-	sqlPrinter.Print(true, sql_)
-
-	return stmt, nil
+	return stmt, err
 }
 
 func (t *Table) PrepareInsert(p Preparer, fields uint) (*sql.Stmt, error) {
@@ -242,6 +243,11 @@ func (t *Table) TabCols(fields uint) Cols {
 	}
 
 	return cols
+}
+
+// Col return column name of field
+func (t *Table) TabCol(field uint) string {
+	return t.TabCols(field).String()
 }
 
 // cols get fields names, each field prepend a prefix string

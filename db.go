@@ -27,6 +27,11 @@ type (
 		InitialModels int
 	}
 
+	Executor interface {
+		Exec(...interface{}) (sql.Result, error)
+		Query(...interface{}) (*sql.Rows, error)
+	}
+
 	ResultType int
 )
 
@@ -90,16 +95,26 @@ func (db *DB) Table(v Model) *Table {
 	return db.register(v, table)
 }
 
-func FieldVals(v Model, fields uint) []interface{} {
-	args := make([]interface{}, FieldCount(fields))
+func FieldVals(v Model, fields uint, args ...interface{}) []interface{} {
+	c, l := FieldCount(fields), len(args)
+	vals := make([]interface{}, c+l)
 	v.Vals(fields, args)
 
-	return args
+	for l = l - 1; l >= 0; l-- {
+		vals[c+l] = args[l]
+	}
+
+	return vals
 }
 
-func FieldPtrs(v Model, fields uint) []interface{} {
-	ptrs := make([]interface{}, FieldCount(fields))
+func FieldPtrs(v Model, fields uint, args ...interface{}) []interface{} {
+	c, l := FieldCount(fields), len(args)
+	ptrs := make([]interface{}, c+l)
 	v.Ptrs(fields, ptrs)
+
+	for l = l - 1; l >= 0; l-- {
+		ptrs[c+l] = args[l]
+	}
 
 	return ptrs
 }
@@ -111,7 +126,7 @@ func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
 func (db *DB) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.Table(v).StmtInsert(db.DB, fields)
 
-	return StmtExec(stmt, err, typ, args...)
+	return Exec(stmt, err, typ, args...)
 }
 
 func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
@@ -126,7 +141,7 @@ func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
 func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := db.Table(v).StmtUpdate(db.DB, fields, whereFields)
 
-	return StmtUpdate(stmt, err, args...)
+	return Update(stmt, err, args...)
 }
 
 func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
@@ -136,29 +151,26 @@ func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
 func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := db.Table(v).StmtDelete(db.DB, whereFields)
 
-	return StmtUpdate(stmt, err, args...)
+	return Update(stmt, err, args...)
 }
 
 // One select one row from database
 func (db *DB) One(v Model, fields, whereFields uint) error {
 	stmt, err := db.Table(v).StmtOne(db.DB, fields, whereFields)
-	scanner, rows := StmtQuery(stmt, err, FieldVals(v, whereFields)...)
+	scanner, rows := Query(stmt, err, FieldVals(v, whereFields)...)
 
 	return scanner.One(rows, FieldPtrs(v, fields)...)
 }
 
 func (db *DB) Limit(s Store, v Model, fields, whereFields uint, start, count int) error {
-	c := FieldCount(whereFields)
-	args := make([]interface{}, c+2)
-	v.Vals(whereFields, args)
-	args[c], args[c+1] = start, count
+	args := FieldVals(v, whereFields, start, count)
 
 	return db.ArgsLimit(s, v, fields, whereFields, args...)
 }
 
 func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := db.Table(v).StmtLimit(db.DB, fields, whereFields)
-	scanner, rows := StmtQuery(stmt, err, args...)
+	scanner, rows := Query(stmt, err, args...)
 
 	return scanner.Limit(rows, s, args[len(args)-1].(int))
 }
@@ -170,7 +182,7 @@ func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := db.Table(v).StmtAll(db.DB, fields, whereFields)
-	scanner, rows := StmtQuery(stmt, err, args...)
+	scanner, rows := Query(stmt, err, args...)
 
 	return scanner.All(rows, s, db.InitialModels)
 }
@@ -186,7 +198,7 @@ func (db *DB) ArgsCount(v Model, whereFields uint,
 	t := db.Table(v)
 
 	stmt, err := t.StmtCount(db.DB, whereFields)
-	scanner, rows := StmtQuery(stmt, err, args...)
+	scanner, rows := Query(stmt, err, args...)
 
 	err = scanner.One(rows, &count)
 
@@ -205,40 +217,42 @@ func (db *DB) Exec(s string, typ ResultType, args ...interface{}) (int64, error)
 	return ResolveResult(res, err, typ)
 }
 
-func (db *DB) Begin() (*Tx, error) {
+var emptyTX = Tx{}
+
+func (db *DB) Begin() (Tx, error) {
 	tx, err := db.DB.Begin()
 	if err != nil {
-		return nil, err
+		return emptyTX, err
 	}
 
-	return &Tx{
+	return Tx{
 		Tx: tx,
 		db: db,
 	}, nil
 }
 
-// StmtUpdate always returl the count of affected rows
-func StmtUpdate(stmt *sql.Stmt, err error, args ...interface{}) (int64, error) {
-	return StmtExec(stmt, err, RES_ROWS, args...)
+// Update always returl the count of affected rows
+func Update(stmt *sql.Stmt, err error, args ...interface{}) (int64, error) {
+	return Exec(stmt, err, RES_ROWS, args...)
 }
 
-// StmtExec execute stmt with given arguments and resolve the result if error is nil
-func StmtExec(stmt *sql.Stmt, err error, typ ResultType, args ...interface{}) (int64, error) {
+// Exec execute stmt with given arguments and resolve the result if error is nil
+func Exec(exec Executor, err error, typ ResultType, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
 
-	res, err := stmt.Exec(args...)
+	res, err := exec.Exec(args...)
 	return ResolveResult(res, err, typ)
 }
 
-// StmtQuery execute the query stmt, error stored in Scanner
-func StmtQuery(stmt *sql.Stmt, err error, args ...interface{}) (Scanner, *sql.Rows) {
+// Query execute the query stmt, error stored in Scanner
+func Query(exec Executor, err error, args ...interface{}) (Scanner, *sql.Rows) {
 	if err != nil {
 		return Scanner{err}, nil
 	}
 
-	rows, err := stmt.Query(args...)
+	rows, err := exec.Query(args...)
 	if err != nil {
 		return Scanner{err}, nil
 	}

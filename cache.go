@@ -1,15 +1,8 @@
 package gomodel
 
-import (
-	"database/sql"
-	"log"
-	"sync/atomic"
-)
+import "database/sql"
 
 type (
-	// ID help for generate sql id
-	ID int32
-
 	// cacheItem keeps the sql and prepared statement of it
 	cacheItem struct {
 		sql  string
@@ -31,8 +24,6 @@ type (
 	Cacher struct {
 		cache []map[uint]cacheItem // [type]map[id]{sql, stmt}
 	}
-
-	SQLPrinter func(string, ...interface{})
 )
 
 const (
@@ -51,47 +42,8 @@ var (
 	// Types defines the default sql types count, it's default applied to all
 	// models.
 	// Change it before register any models.
-	Types                 = defaultTypeEnd
-	sqlPrinter SQLPrinter = func(string, ...interface{}) {}
+	Types = defaultTypeEnd
 )
-
-func (p SQLPrinter) Print(fromcache bool, sql string) {
-	p("Cached: %t, SQL: %s\n", fromcache, sql)
-}
-
-// SQLPrint enable sql print for each operation
-func SQLPrint(enable bool, printer func(formart string, v ...interface{})) {
-	if !enable {
-		return
-	}
-
-	sqlPrinter = printer
-	if sqlPrinter == nil {
-		sqlPrinter = log.Printf
-	}
-}
-
-// NewID create a id generator used for StmtById, normally, one ID is enough,
-// it's safety used for all models
-//
-// Example:
-// sqlid := gomodel.NewID
-//
-// sqlidUserUpdate := slqid.New()
-// sqlidUserDelete := sqlid.New()
-// sqlidBookUpdate := sqlid.New()
-// sqlidBookDelete := sqlid.New()
-//
-func NewID() *ID {
-	var i int32
-
-	return (*ID)(&i)
-}
-
-// New generate a new sql id
-func (i *ID) New() uint {
-	return uint(atomic.AddInt32((*int32)(i), 1))
-}
 
 // NewCacher create a common sql and statement cacher with given types count
 // this will make no parameter checks
@@ -137,14 +89,14 @@ func (c *Cacher) ExtendType(typ uint) uint {
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c *Cacher) StmtById(p Preparer, typ, id uint, create func() string) (*sql.Stmt, error) {
-	if item, has := c.cache[typ][id]; has {
+func (c *Cacher) StmtById(p Preparer, typ uint, is *IdSql) (*sql.Stmt, error) {
+	if item, has := c.cache[typ][is.ID]; has {
 		sqlPrinter.Print(true, item.sql)
 
 		return item.stmt, nil
 	}
 
-	sql_ := create()
+	sql_ := is.SQL()
 	sqlPrinter.Print(false, sql_)
 
 	stmt, err := p.Prepare(sql_)
@@ -152,7 +104,7 @@ func (c *Cacher) StmtById(p Preparer, typ, id uint, create func() string) (*sql.
 		return nil, err
 	}
 
-	c.cache[typ][id] = cacheItem{sql: sql_, stmt: stmt}
+	c.cache[typ][is.ID] = cacheItem{sql: sql_, stmt: stmt}
 
 	return stmt, nil
 }
@@ -187,7 +139,20 @@ func (c *Cacher) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, 
 	return stmt, nil
 }
 
-func (c *Cacher) PrepareStmt(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
+func (c *Cacher) PrepareById(p Preparer, typ uint, is *IdSql) (*sql.Stmt, error) {
+	item, has := c.cache[typ][is.ID]
+	if !has {
+		item.sql = is.SQL()
+		c.cache[typ][is.ID] = item
+	}
+
+	sqlPrinter.Print(has, item.sql)
+
+	stmt, err := p.Prepare(item.sql)
+	return stmt, err
+}
+
+func (c *Cacher) PrepareSQL(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
 	item, has := c.cache[typ][id]
 	if !has {
 		return "", nil, nil
@@ -195,4 +160,10 @@ func (c *Cacher) PrepareStmt(p Preparer, typ, id uint) (string, *sql.Stmt, error
 
 	stmt, err := p.Prepare(item.sql)
 	return item.sql, stmt, err
+}
+
+func (c *Cacher) SetPrepareSQL(typ, id uint, sql string) {
+	c.cache[typ][id] = cacheItem{
+		sql: sql,
+	}
 }

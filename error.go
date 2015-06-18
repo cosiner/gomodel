@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"strings"
 
+	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/strings2"
 )
 
@@ -11,6 +12,7 @@ import (
 
 // PRIMARY_KEY for composite foreign key
 const PRIMARY_KEY = "PRIMARY"
+const NonError = errors.Err("non error")
 
 type err struct{}
 
@@ -43,7 +45,9 @@ func (err) DuplicateKey(err error) string {
 func (e err) WrapDuplicateKey(err error, keyfunc KeyFunc) error {
 	if key := e.DuplicateKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
-			return e
+			err = e
+		} else if e == NonError {
+			err = nil
 		}
 	}
 	return err
@@ -71,7 +75,9 @@ func (err) ForeignKey(err error) string {
 func (e err) WrapForeignKey(err error, keyfunc KeyFunc) error {
 	if key := e.ForeignKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
-			return e
+			err = e
+		} else if e == NonError {
+			err = nil
 		}
 	}
 	return err
@@ -80,6 +86,8 @@ func (e err) WrapForeignKey(err error, keyfunc KeyFunc) error {
 func (err) WrapNoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
+	} else if err == NonError {
+		return nil
 	}
 
 	return err
@@ -88,6 +96,8 @@ func (err) WrapNoRows(err, newErr error) error {
 func (err) WrapNoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
+	} else if err == NonError {
+		return nil
 	}
 
 	return err
