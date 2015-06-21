@@ -23,7 +23,7 @@ type (
 	Table struct {
 		Name string
 		Num  uint
-		Cacher
+		Cache
 
 		columns        []string
 		prefix         string // Name + "."
@@ -51,13 +51,18 @@ func FieldsIdentity(numField uint, fields, whereFields uint) uint {
 func (t *Table) Stmt(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt := t.Cacher.GetStmt(typ, id)
+	sql_, stmt, err := t.Cache.GetStmt(p, typ, id)
+	if err != nil {
+		return nil, err
+	}
+
 	if stmt == nil {
 		sql_ = build(fields, whereFields)
 		sqlPrinter.Print(false, sql_)
 
-		return t.Cacher.SetStmt(p, typ, id, sql_)
+		return t.Cache.SetStmt(p, typ, id, sql_)
 	}
+
 	sqlPrinter.Print(true, sql_)
 
 	return stmt, nil
@@ -95,14 +100,14 @@ func (t *Table) StmtCount(p Preparer, whereFields uint) (*sql.Stmt, error) {
 func (t *Table) Prepare(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt, err := t.Cacher.PrepareSQL(p, typ, id)
+	sql_, stmt, err := t.Cache.PrepareSQL(p, typ, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if stmt == nil {
 		sql_ = build(fields, whereFields)
-		t.Cacher.SetPrepareSQL(typ, id, sql_)
+		t.Cache.SetSQL(typ, id, sql_)
 		sqlPrinter.Print(false, sql_)
 
 		stmt, err = p.Prepare(sql_)
@@ -307,9 +312,9 @@ func parse(v Model, db *DB) *Table {
 	}
 
 	return &Table{
-		Num:    uint(num),
-		Name:   v.Table(),
-		Cacher: NewCacher(Types),
+		Num:   uint(num),
+		Name:  v.Table(),
+		Cache: NewCache(Types),
 
 		columns:        cols,
 		prefix:         v.Table() + ".",

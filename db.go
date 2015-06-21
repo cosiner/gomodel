@@ -21,7 +21,7 @@ type (
 		// driver string
 		*sql.DB
 		tables map[string]*Table
-		Cacher
+		Cache
 
 		// initial models count for 'All'
 		InitialModels int
@@ -71,7 +71,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	db_.SetMaxIdleConns(maxIdle)
 	db_.SetMaxOpenConns(maxOpen)
 	db.DB = db_
-	db.Cacher = NewCacher(Types) // use global types count
+	db.Cache = NewCache(Types) // use global types count
 
 	return nil
 }
@@ -232,8 +232,8 @@ func (db *DB) Begin() (Tx, error) {
 }
 
 // Update always returl the count of affected rows
-func Update(stmt *sql.Stmt, err error, args ...interface{}) (int64, error) {
-	return Exec(stmt, err, RES_ROWS, args...)
+func Update(exec Executor, err error, args ...interface{}) (int64, error) {
+	return Exec(exec, err, RES_ROWS, args...)
 }
 
 // Exec execute stmt with given arguments and resolve the result if error is nil
