@@ -94,14 +94,14 @@ func (c *Cache) Types() uint {
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c *Cache) StmtById(p Preparer, typ uint, is *IdSql) (*sql.Stmt, error) {
+func (c *Cache) StmtById(p Preparer, typ uint, is IdSql) (*sql.Stmt, error) {
 	if item, has := c.cache[typ][is.ID]; has {
 		sqlPrinter.Print(true, item.sql)
 
 		return item.stmt, nil
 	}
 
-	sql_ := is.SQL()
+	sql_ := is.SQL
 	sqlPrinter.Print(false, sql_)
 
 	stmt, err := p.Prepare(sql_)
@@ -144,10 +144,10 @@ func (c *Cache) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, e
 	return stmt, nil
 }
 
-func (c *Cache) PrepareById(p Preparer, typ uint, is *IdSql) (*sql.Stmt, error) {
+func (c *Cache) PrepareById(p Preparer, typ uint, is IdSql) (*sql.Stmt, error) {
 	item, has := c.cache[typ][is.ID]
 	if !has {
-		item.sql = is.SQL()
+		item.sql = is.SQL
 		c.cache[typ][is.ID] = item
 	}
 

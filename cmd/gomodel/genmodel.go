@@ -2,9 +2,13 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
+
+	encfile "github.com/cosiner/gohper/encoding2/file"
+	"github.com/cosiner/gohper/terminal/color"
 
 	"github.com/cosiner/gohper/defval"
 	"github.com/cosiner/gohper/errors"
@@ -17,24 +21,29 @@ import (
 )
 
 var (
-	outfile  string
-	tmplfile string
-	copyTmpl bool
+	outfile    string
+	tmplfile   string
+	copyTmpl   bool
+	sqlmapping string
 )
 
 func init() {
 	flag.StringVar(&outfile, "o", "", "outtput file, default model_gen.go")
 	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
-
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
-
+	flag.StringVar(&sqlmapping, "m", "", "sql mapping file to convert")
 	flag.Parse()
-	defval.String(&outfile, "model_gen.go")
-	if tmplfile == "" {
-		tmplfile = TmplName
-		if !file.IsExist(tmplfile) {
-			tmplfile = defTmplPath
+	if sqlmapping == "" {
+		defval.String(&outfile, "model_gen.go")
+
+		if tmplfile == "" {
+			tmplfile = TmplName
+			if !file.IsExist(tmplfile) {
+				tmplfile = defTmplPath
+			}
 		}
+	} else {
+		defval.String(&outfile, "sqlmapping_gen.go")
 	}
 }
 
@@ -62,6 +71,28 @@ func main() {
 
 	if len(mv) == 0 {
 		return
+	}
+
+	if sqlmapping != "" {
+		mapping, err := encfile.ReadProperties(sqlmapping)
+		errors.Fatalln(err)
+
+		errors.Fatal(
+			file.OpenOrCreate(outfile, false, func(fd *os.File) error {
+				fmt.Fprintln(fd, "var (")
+				for name, sql := range mapping {
+					newsql, err := mv.Conv(sql)
+					if err != nil {
+						color.LightRed.Errorln(err)
+					} else {
+						fmt.Fprintf(fd, "%s = gomodel.NewIdSql(func() string {\nreturn %s\n}\n", name, newsql)
+					}
+				}
+				fmt.Fprintln(fd, ")")
+
+				return nil
+			}),
+		)
 	}
 
 	errors.Fatal(
