@@ -57,7 +57,7 @@ func main() {
 		return
 	}
 
-	mv := make(modelVisitor)
+	mv := make(Visitor)
 	if len(args) == 1 {
 		errors.Fatalln(mv.parseDir(args[0]))
 	} else {

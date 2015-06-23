@@ -15,10 +15,10 @@ type Table struct {
 	Fields sortedmap.Map
 }
 
-type Vistor map[string]*Table
+type Visitor map[string]*Table
 
 // add an model and it's field to parse result
-func (v Vistor) add(model, table, field, col string) {
+func (v Visitor) add(model, table, field, col string) {
 	if table == "" {
 		table = strings2.ToSnake(model)
 	}
@@ -36,16 +36,8 @@ func (v Vistor) add(model, table, field, col string) {
 	t.Fields.Set(field, col)
 }
 
-// needParse check whether a model should be parsed
-// unexporeted model don't parse
-// if visitor's model list is not empty, only parse model exist in list
-// otherwise parse all
-func (v Vistor) needParse(model string) bool {
-	return goutil.IsExported(model)
-}
-
 // parse ast tree to find exported struct and it's fields
-func (v Vistor) parseFiles(files ...string) error {
+func (v Visitor) parseFiles(files ...string) error {
 	for _, file := range files {
 		err := v.parseFile(file)
 		if err != nil {
@@ -56,7 +48,7 @@ func (v Vistor) parseFiles(files ...string) error {
 	return nil
 }
 
-func (v Vistor) parseDir(dir string) error {
+func (v Visitor) parseDir(dir string) error {
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -70,10 +62,10 @@ func (v Vistor) parseDir(dir string) error {
 	})
 }
 
-func (v Vistor) parseFile(file string) error {
+func (v Visitor) parseFile(file string) error {
 	return ast.Parser{
 		Struct: func(a *ast.Attrs) (err error) {
-			if !v.needParse(a.TypeName) {
+			if !goutil.IsExported(a.TypeName) {
 				err = ast.TYPE_END
 			} else if table := a.S.Tag.Get("table"); table == "-" {
 				err = ast.TYPE_END
@@ -87,7 +79,7 @@ func (v Vistor) parseFile(file string) error {
 }
 
 // buildModelFields build model map from parse result
-func (v Vistor) buildModelFields() map[*Model][]*Field {
+func (v Visitor) buildModelFields() map[*Model][]*Field {
 	names := make(map[*Model][]*Field, len(v))
 
 	for model, table := range v {
