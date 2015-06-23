@@ -81,11 +81,17 @@ func main() {
 			file.OpenOrCreate(outfile, false, func(fd *os.File) error {
 				fmt.Fprintln(fd, "var (")
 				for name, sql := range mapping {
+					sql, err := strings2.TrimQuote(sql)
+					if err != nil {
+						color.LightRed.Errorln(err)
+						continue
+					}
+
 					newsql, err := mv.Conv(sql)
 					if err != nil {
 						color.LightRed.Errorln(err)
 					} else {
-						fmt.Fprintf(fd, "%s = gomodel.NewIdSql(func() string {\nreturn %s\n}\n", name, newsql)
+						fmt.Fprintf(fd, "%s = gomodel.NewIdSql(func() string {\nreturn \"%s\"\n}\n", name, newsql)
 					}
 				}
 				fmt.Fprintln(fd, ")")
