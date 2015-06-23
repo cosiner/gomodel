@@ -13,9 +13,9 @@ const (
 	PARSING_FIELD
 )
 
-func (mv modelVisitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
+func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 	model := modelbuf.String()
-	*table = mv[model]
+	*table = v[model]
 	if *table == nil {
 		return errors.Newf("model %s isn't registered", model)
 	}
@@ -23,9 +23,9 @@ func (mv modelVisitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 	return nil
 }
 
-func (mv modelVisitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
+func (v Visitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
 	var table *Table
-	err := mv.modelTable(modelbuf, &table)
+	err := v.modelTable(modelbuf, &table)
 	if err == nil {
 		sqlbuf.WriteString(table.Name)
 	}
@@ -33,7 +33,7 @@ func (mv modelVisitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
 	return err
 }
 
-func (mv modelVisitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fieldbuf *bytes.Buffer) error {
+func (v Visitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fieldbuf *bytes.Buffer) error {
 	field := fieldbuf.String()
 	col := table.Fields.Get(field)
 	if col == nil {
@@ -49,7 +49,7 @@ func (mv modelVisitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf
 	return nil
 }
 
-func (mv modelVisitor) conv(sql string) (s string, err error) {
+func (v Visitor) conv(sql string) (s string, err error) {
 	state := INIT
 	sqlbuf := bytes2.NewBuffer(len(sql))
 	modelbuf := bytes2.NewBuffer(8)
@@ -73,7 +73,7 @@ func (mv modelVisitor) conv(sql string) (s string, err error) {
 		case PARSING_MODEL:
 			switch c {
 			case '}':
-				if err = mv.writeModel(sqlbuf, modelbuf); err != nil {
+				if err = v.writeModel(sqlbuf, modelbuf); err != nil {
 					return
 				}
 
@@ -82,7 +82,7 @@ func (mv modelVisitor) conv(sql string) (s string, err error) {
 				withModel = true
 				fallthrough
 			case ':':
-				if err = mv.modelTable(modelbuf, &table); err != nil {
+				if err = v.modelTable(modelbuf, &table); err != nil {
 					return
 				}
 
@@ -92,7 +92,7 @@ func (mv modelVisitor) conv(sql string) (s string, err error) {
 			}
 		case PARSING_FIELD:
 			if c == ',' || c == '}' {
-				if err = mv.writeField(table, withModel, sqlbuf, modelbuf, fieldbuf); err != nil {
+				if err = v.writeField(table, withModel, sqlbuf, modelbuf, fieldbuf); err != nil {
 					return
 				}
 

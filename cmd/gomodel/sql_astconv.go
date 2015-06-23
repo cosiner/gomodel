@@ -67,23 +67,6 @@ func (s *Section) AddSubquery(as string) *Section {
 	return newsec
 }
 
-func (mv modelVisitor) astConv(sql string) (string, error) {
-	node, err := sqlparser.Parse(sql, true)
-	if err != nil {
-		return "", err
-	}
-
-	s := newSection()
-	s.Inspect(node)
-
-	if err = s.replace(mv); err != nil {
-		return "", err
-	}
-	buf := sqlparser.NewTrackedBuffer(nil)
-	node.Format(buf)
-	return buf.String(), nil
-}
-
 func (s *Section) Inspect(node sqlparser.SQLNode) {
 	var table string
 	sqlparser.Inspect(node, func(node sqlparser.SQLNode) bool {
@@ -108,9 +91,9 @@ func (s *Section) Inspect(node sqlparser.SQLNode) {
 	})
 }
 
-func (s *Section) model(mv modelVisitor, tab *sqlparser.TableName) (*Table, error) {
+func (s *Section) modelTable2(v Vistor, tab *sqlparser.TableName) (*Table, error) {
 	tabname := string(tab.Name)
-	model := mv[tabname]
+	model := v[tabname]
 	if model == nil {
 		return nil, errors.Newf("model %s hasn't been registered", tabname)
 	}
@@ -118,7 +101,7 @@ func (s *Section) model(mv modelVisitor, tab *sqlparser.TableName) (*Table, erro
 	return model, nil
 }
 
-func (s *Section) replace(mv modelVisitor) error {
+func (s *Section) replace(v Vistor) error {
 	for tabalias, cols := range s.Columns {
 		tabnode, has := s.Tables[tabalias]
 		if !has {
@@ -126,11 +109,11 @@ func (s *Section) replace(mv modelVisitor) error {
 		}
 
 		if tabnode.Table == nil {
-			// don't replace columns in subquery section for alias
+			// don't replace columns of subquery section because of alias
 			continue
 		}
 
-		model, err := s.model(mv, tabnode.Table)
+		model, err := s.modelTable2(v, tabnode.Table)
 		if err != nil {
 			return err
 		}
@@ -146,18 +129,35 @@ func (s *Section) replace(mv modelVisitor) error {
 				continue
 			}
 
-			model, err := s.model(mv, tabnode.Table)
+			model, err := s.modelTable2(v, tabnode.Table)
 			if err != nil {
 				return err
 			}
 
 			tabnode.Table.Name = []byte(model.Name)
 		} else {
-			if err := tabnode.Subquery.replace(mv); err != nil {
+			if err := tabnode.Subquery.replace(v); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
+}
+
+func (v Vistor) astConv(sql string) (string, error) {
+	node, err := sqlparser.Parse(sql, true)
+	if err != nil {
+		return "", err
+	}
+
+	s := newSection()
+	s.Inspect(node)
+
+	if err = s.replace(v); err != nil {
+		return "", err
+	}
+	buf := sqlparser.NewTrackedBuffer(nil)
+	node.Format(buf)
+	return buf.String(), nil
 }
