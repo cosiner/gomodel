@@ -1,4 +1,10 @@
-{{range $model, $fields := .}}
+var (
+{{range $name, $sql := .SQLs}}
+    {{$name}} = gomodel.NewIdSql({{$sql}})
+{{end}}
+)
+
+{{range $model, $fields := .Models}}
 {{$normal := $model.Name}}
 {{$unexport := $model.Unexported}}
 {{$upper := $model.Upper}}

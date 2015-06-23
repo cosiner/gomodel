@@ -2,15 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
 
-	encfile "github.com/cosiner/gohper/encoding2/file"
-	"github.com/cosiner/gohper/terminal/color"
-
 	"github.com/cosiner/gohper/defval"
+	encfile "github.com/cosiner/gohper/encoding2/file"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/goutil"
 	"github.com/cosiner/gohper/goutil/ast"
@@ -18,6 +15,7 @@ import (
 	"github.com/cosiner/gohper/os2/path2"
 	"github.com/cosiner/gohper/sortedmap"
 	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gohper/terminal/color"
 )
 
 var (
@@ -25,6 +23,8 @@ var (
 	tmplfile   string
 	copyTmpl   bool
 	sqlmapping string
+
+	useAst bool
 )
 
 func init() {
@@ -32,18 +32,16 @@ func init() {
 	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.StringVar(&sqlmapping, "m", "", "sql mapping file to convert")
+	flag.BoolVar(&useAst, "ast", true, "parse sql ast")
 	flag.Parse()
-	if sqlmapping == "" {
-		defval.String(&outfile, "model_gen.go")
 
-		if tmplfile == "" {
-			tmplfile = TmplName
-			if !file.IsExist(tmplfile) {
-				tmplfile = defTmplPath
-			}
+	defval.String(&outfile, "model_gen.go")
+
+	if tmplfile == "" {
+		tmplfile = TmplName
+		if !file.IsExist(tmplfile) {
+			tmplfile = defTmplPath
 		}
-	} else {
-		defval.String(&outfile, "sqlmapping_gen.go")
 	}
 }
 
@@ -73,32 +71,42 @@ func main() {
 		return
 	}
 
+	type Result struct {
+		Models map[*Model][]*Field
+		SQLs   map[string]string
+	}
+
+	var result Result
+
 	if sqlmapping != "" {
 		mapping, err := encfile.ReadProperties(sqlmapping)
 		errors.Fatalln(err)
 
 		errors.Fatal(
 			file.OpenOrCreate(outfile, false, func(fd *os.File) error {
-				fmt.Fprintln(fd, "var (")
 				for name, sql := range mapping {
 					sql, err := strings2.TrimQuote(sql)
 					if err != nil {
 						color.LightRed.Errorln(err)
 						continue
 					}
-
-					newsql, err := mv.Conv(sql)
-					if err != nil {
-						color.LightRed.Errorln(err)
+					if useAst {
+						sql, err = mv.astConv(sql)
 					} else {
-						fmt.Fprintf(fd, "%s = gomodel.NewIdSql(func() string {\nreturn \"%s\"\n}\n", name, newsql)
+						sql, err = mv.conv(sql)
+					}
+					if err != nil {
+						color.LightRed.Errorf("%s: %s", name, err)
+					} else {
+						mapping[name] = sql
 					}
 				}
-				fmt.Fprintln(fd, ")")
 
 				return nil
 			}),
 		)
+
+		result.SQLs = mapping
 	}
 
 	errors.Fatal(
@@ -107,8 +115,9 @@ func main() {
 			if err != nil {
 				return err
 			}
+			result.Models = mv.buildModelFields()
 
-			return t.Execute(fd, mv.buildModelFields())
+			return t.Execute(fd, result)
 		}),
 	)
 }

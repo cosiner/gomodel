@@ -49,7 +49,7 @@ func (mv modelVisitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf
 	return nil
 }
 
-func (mv modelVisitor) Conv(sql string) (s string, err error) {
+func (mv modelVisitor) conv(sql string) (s string, err error) {
 	state := INIT
 	sqlbuf := bytes2.NewBuffer(len(sql))
 	modelbuf := bytes2.NewBuffer(8)
