@@ -1,6 +1,6 @@
 var (
 {{range $name, $sql := .SQLs}}
-    {{$name}} = gomodel.NewIdSql({{$sql}})
+    {{$name}} = gomodel.NewIdSql("{{$sql}}")
 {{end}}
 )
 

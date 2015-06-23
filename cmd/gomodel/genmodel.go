@@ -7,19 +7,16 @@ import (
 	"text/template"
 
 	"github.com/cosiner/gohper/defval"
-	encfile "github.com/cosiner/gohper/encoding2/file"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/os2/path2"
-	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/terminal/color"
 )
 
 var (
-	outfile    string
-	tmplfile   string
-	copyTmpl   bool
-	sqlmapping string
+	outfile  string
+	tmplfile string
+	copyTmpl bool
 
 	useAst bool
 )
@@ -28,7 +25,6 @@ func init() {
 	flag.StringVar(&outfile, "o", "", "outtput file, default model_gen.go")
 	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
-	flag.StringVar(&sqlmapping, "m", "", "sql mapping file to convert")
 	flag.BoolVar(&useAst, "ast", true, "parse sql ast")
 	flag.Parse()
 
@@ -57,54 +53,36 @@ func main() {
 		return
 	}
 
-	mv := make(Visitor)
+	v := newVisitor()
 	if len(args) == 1 {
-		errors.Fatalln(mv.parseDir(args[0]))
+		errors.Fatalln(v.parseDir(args[0]))
 	} else {
-		errors.Fatalln(mv.parseFiles(args...))
+		errors.Fatalln(v.parseFiles(args...))
 	}
 
-	if len(mv) == 0 {
+	if len(v.Models) == 0 {
 		return
 	}
 
-	type Result struct {
-		Models map[*Model][]*Field
-		SQLs   map[string]string
-	}
-
-	var result Result
-
-	if sqlmapping != "" {
-		mapping, err := encfile.ReadProperties(sqlmapping)
-		errors.Fatalln(err)
-
-		errors.Fatal(
-			file.OpenOrCreate(outfile, false, func(fd *os.File) error {
-				for name, sql := range mapping {
-					sql, err := strings2.TrimQuote(sql)
-					if err != nil {
-						color.LightRed.Errorln(err)
-						continue
-					}
-					if useAst {
-						sql, err = mv.astConv(sql)
-					} else {
-						sql, err = mv.conv(sql)
-					}
-					if err != nil {
-						color.LightRed.Errorf("%s: %s", name, err)
-					} else {
-						mapping[name] = sql
-					}
+	errors.Fatal(
+		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
+			var err error
+			for name, sql := range v.SQLs {
+				if useAst {
+					sql, err = v.astConv(sql)
+				} else {
+					sql, err = v.conv(sql)
 				}
+				if err != nil {
+					color.LightRed.Errorf("%s: %s\n", name, err)
+				} else {
+					v.SQLs[name] = sql
+				}
+			}
 
-				return nil
-			}),
-		)
-
-		result.SQLs = mapping
-	}
+			return nil
+		}),
+	)
 
 	errors.Fatal(
 		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
@@ -112,9 +90,14 @@ func main() {
 			if err != nil {
 				return err
 			}
-			result.Models = mv.buildModelFields()
 
-			return t.Execute(fd, result)
+			return t.Execute(fd, struct {
+				Models map[*Model][]*Field
+				SQLs   map[string]string
+			}{
+				v.buildModelFields(),
+				v.SQLs,
+			})
 		}),
 	)
 }

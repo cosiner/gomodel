@@ -7,15 +7,9 @@ import (
 	"github.com/cosiner/gohper/errors"
 )
 
-const (
-	INIT = iota
-	PARSING_MODEL
-	PARSING_FIELD
-)
-
 func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 	model := modelbuf.String()
-	*table = v[model]
+	*table = v.Models[model]
 	if *table == nil {
 		return errors.Newf("model %s isn't registered", model)
 	}
@@ -50,6 +44,12 @@ func (v Visitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fiel
 }
 
 func (v Visitor) conv(sql string) (s string, err error) {
+	const (
+		INIT = iota
+		PARSING_MODEL
+		PARSING_FIELD
+	)
+
 	state := INIT
 	sqlbuf := bytes2.NewBuffer(len(sql))
 	modelbuf := bytes2.NewBuffer(8)

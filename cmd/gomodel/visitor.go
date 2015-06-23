@@ -3,9 +3,11 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cosiner/gohper/goutil"
 	"github.com/cosiner/gohper/goutil/ast"
+	"github.com/cosiner/gohper/pair"
 	"github.com/cosiner/gohper/sortedmap"
 	"github.com/cosiner/gohper/strings2"
 )
@@ -15,7 +17,17 @@ type Table struct {
 	Fields sortedmap.Map
 }
 
-type Visitor map[string]*Table
+type Visitor struct {
+	Models map[string]*Table
+	SQLs   map[string]string
+}
+
+func newVisitor() Visitor {
+	return Visitor{
+		Models: make(map[string]*Table),
+		SQLs:   make(map[string]string),
+	}
+}
 
 // add an model and it's field to parse result
 func (v Visitor) add(model, table, field, col string) {
@@ -27,10 +39,10 @@ func (v Visitor) add(model, table, field, col string) {
 		col = strings2.ToSnake(field)
 	}
 
-	t, has := v[model]
+	t, has := v.Models[model]
 	if !has {
 		t = &Table{Name: table}
-		v[model] = t
+		v.Models[model] = t
 	}
 
 	t.Fields.Set(field, col)
@@ -75,14 +87,20 @@ func (v Visitor) parseFile(file string) error {
 
 			return
 		},
+		Func: func(a *ast.Attrs) (err error) {
+			v.extractModelSQL(a.TypeDoc)
+
+			return nil
+		},
+		ParseDoc: true,
 	}.ParseFile(file)
 }
 
 // buildModelFields build model map from parse result
 func (v Visitor) buildModelFields() map[*Model][]*Field {
-	names := make(map[*Model][]*Field, len(v))
+	names := make(map[*Model][]*Field, len(v.Models))
 
-	for model, table := range v {
+	for model, table := range v.Models {
 		m := NewModel(model, table.Name)
 		fields := table.Fields
 		for _, field := range fields.Elements {
@@ -91,4 +109,40 @@ func (v Visitor) buildModelFields() map[*Model][]*Field {
 	}
 
 	return names
+}
+
+func (v Visitor) extractModelSQL(docs []string) {
+	const (
+		INIT = iota
+		PARSING
+	)
+
+	var (
+		sqls  []string
+		name  string
+		state = INIT
+	)
+
+	for _, d := range docs {
+		if state == PARSING {
+			d = d[len("//"):]
+			if strings.HasPrefix(d, "]") {
+				v.SQLs[name] = strings.Join(sqls, " ")
+				state = INIT
+			} else {
+				sqls = append(sqls, strings.TrimSpace(d))
+			}
+		} else if strings.HasPrefix(d, "//gomodel ") {
+			d = d[len("//gomodel "):]
+			p := pair.Parse(d, "=").Trim()
+			if !strings.HasSuffix(p.Value, "[") {
+				v.SQLs[p.Key] = p.Value
+			} else {
+				name = p.Key
+				sqls = sqls[:0]
+
+				state = PARSING
+			}
+		}
+	}
 }

@@ -93,7 +93,7 @@ func (s *Section) Inspect(node sqlparser.SQLNode) {
 
 func (s *Section) modelTable2(v Visitor, tab *sqlparser.TableName) (*Table, error) {
 	tabname := string(tab.Name)
-	model := v[tabname]
+	model := v.Models[tabname]
 	if model == nil {
 		return nil, errors.Newf("model %s hasn't been registered", tabname)
 	}
