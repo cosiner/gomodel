@@ -98,7 +98,7 @@ func (db *DB) Table(v Model) *Table {
 func FieldVals(v Model, fields uint, args ...interface{}) []interface{} {
 	c, l := FieldCount(fields), len(args)
 	vals := make([]interface{}, c+l)
-	v.Vals(fields, args)
+	v.Vals(fields, vals)
 
 	for l = l - 1; l >= 0; l-- {
 		vals[c+l] = args[l]
