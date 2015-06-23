@@ -85,8 +85,8 @@ func (v Visitor) buildModelFields() map[*Model][]*Field {
 	for model, table := range v {
 		m := NewModel(model, table.Name)
 		fields := table.Fields
-		for field, index := range fields.Indexes {
-			names[m] = append(names[m], NewField(m, field, fields.Elements[index].(string)))
+		for _, field := range fields.Elements {
+			names[m] = append(names[m], NewField(m, field.Key, field.Value.(string)))
 		}
 	}
 
