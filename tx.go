@@ -97,7 +97,7 @@ func (tx Tx) ArgsCount(v Model, whereFields uint,
 }
 
 // ExecUpdate execute a update operation, return resolved result
-func (tx Tx) ExecUpdate(s string, needId bool, args ...interface{}) (int64, error) {
+func (tx Tx) ExecUpdate(s string, args ...interface{}) (int64, error) {
 	return tx.Exec(s, RES_ROWS, args...)
 }
 

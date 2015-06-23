@@ -6,8 +6,8 @@ import (
 )
 
 type Section struct {
-	Columns map[string]map[string]*sqlparser.ColName
-	Tables  map[string]struct {
+	Columns map[string]map[string][]*sqlparser.ColName
+	Tables  map[string][]struct {
 		Table    *sqlparser.TableName
 		Subquery *Section
 	}
@@ -15,18 +15,18 @@ type Section struct {
 
 func newSection() *Section {
 	return &Section{
-		Columns: make(map[string]map[string]*sqlparser.ColName),
-		Tables: make(map[string]struct {
+		Columns: make(map[string]map[string][]*sqlparser.ColName),
+		Tables: make(map[string][]struct {
 			Table    *sqlparser.TableName
 			Subquery *Section
 		}),
 	}
 }
 
-func (s *Section) tableColumns(table string) map[string]*sqlparser.ColName {
+func (s *Section) tableColumns(table string) map[string][]*sqlparser.ColName {
 	cols, has := s.Columns[table]
 	if !has {
-		cols = make(map[string]*sqlparser.ColName)
+		cols = make(map[string][]*sqlparser.ColName)
 		s.Columns[table] = cols
 	}
 
@@ -41,7 +41,7 @@ func (s *Section) AddColumn(table string, col *sqlparser.ColName) {
 
 	cols := s.tableColumns(tabName)
 	if colName := string(col.Name); colName != "?" {
-		cols[colName] = col
+		cols[colName] = append(cols[colName], col)
 	}
 }
 
@@ -49,20 +49,24 @@ func (s *Section) AddTable(as string, tab *sqlparser.TableName) string {
 	if as == "" {
 		as = string(tab.Name)
 	}
-	s.Tables[as] = struct {
+	s.Tables[as] = append(s.Tables[as], struct {
 		Table    *sqlparser.TableName
 		Subquery *Section
-	}{Table: tab}
+	}{
+		Table: tab,
+	})
 
 	return as
 }
 
 func (s *Section) AddSubquery(as string) *Section {
 	newsec := newSection()
-	s.Tables[as] = struct {
+	s.Tables[as] = append(s.Tables[as], struct {
 		Table    *sqlparser.TableName
 		Subquery *Section
-	}{Subquery: newsec}
+	}{
+		Subquery: newsec,
+	})
 
 	return newsec
 }
@@ -103,11 +107,12 @@ func (s *Section) modelTable2(v Visitor, tab *sqlparser.TableName) (*Table, erro
 
 func (s *Section) replace(v Visitor) error {
 	for tabalias, cols := range s.Columns {
-		tabnode, has := s.Tables[tabalias]
+		tabnodes, has := s.Tables[tabalias]
 		if !has {
 			return errors.Newf("table alias %s not found in sql", tabalias)
 		}
 
+		tabnode := tabnodes[0]
 		if tabnode.Table == nil {
 			// don't replace columns of subquery section because of alias
 			continue
@@ -118,26 +123,30 @@ func (s *Section) replace(v Visitor) error {
 			return err
 		}
 
-		for field, col := range cols {
-			col.Name = []byte(model.Fields.DefGet(field, "").(string))
+		for field, cols2 := range cols {
+			for _, col := range cols2 {
+				col.Name = []byte(model.Fields.DefGet(field, "").(string))
+			}
 		}
 	}
 
-	for _, tabnode := range s.Tables {
-		if tabnode.Table != nil {
-			if string(tabnode.Table.Name) == "DUAL" {
-				continue
-			}
+	for _, tabnodes := range s.Tables {
+		for _, tabnode := range tabnodes {
+			if tabnode.Table != nil {
+				if string(tabnode.Table.Name) == "DUAL" {
+					continue
+				}
 
-			model, err := s.modelTable2(v, tabnode.Table)
-			if err != nil {
-				return err
-			}
+				model, err := s.modelTable2(v, tabnode.Table)
+				if err != nil {
+					return err
+				}
 
-			tabnode.Table.Name = []byte(model.Name)
-		} else {
-			if err := tabnode.Subquery.replace(v); err != nil {
-				return err
+				tabnode.Table.Name = []byte(model.Name)
+			} else {
+				if err := tabnode.Subquery.replace(v); err != nil {
+					return err
+				}
 			}
 		}
 	}

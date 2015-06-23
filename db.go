@@ -260,6 +260,20 @@ func Query(exec Executor, err error, args ...interface{}) (Scanner, *sql.Rows) {
 	return normalScanner, rows
 }
 
+func (db *DB) ExecById(typ uint, is IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
+	stmt, err := db.StmtById(db, typ, is)
+	return Exec(stmt, err, resTyp, args...)
+}
+
+func (db *DB) UpdateById(typ uint, is IdSql, args ...interface{}) (int64, error) {
+	return db.ExecById(typ, is, RES_ROWS, args...)
+}
+
+func (db *DB) QueryById(typ uint, is IdSql, args ...interface{}) (Scanner, *sql.Rows) {
+	stmt, err := db.StmtById(db, typ, is)
+	return Query(stmt, err, args...)
+}
+
 // ResolveResult resolve sql result, if need id, return last insert id
 // else return affected rows count
 func ResolveResult(res sql.Result, err error, typ ResultType) (int64, error) {
