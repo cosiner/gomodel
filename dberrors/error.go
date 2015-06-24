@@ -1,4 +1,4 @@
-package gomodel
+package dberrors
 
 import (
 	"database/sql"
@@ -14,13 +14,9 @@ import (
 const PRIMARY_KEY = "PRIMARY"
 const NonError = errors.Err("non error")
 
-type err struct{}
-
 type KeyFunc func(key string) error
 
-var Error = err{}
-
-func (err) DuplicateKey(err error) string {
+func DuplicateKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -42,8 +38,8 @@ func (err) DuplicateKey(err error) string {
 	return ""
 }
 
-func (e err) WrapDuplicateKey(err error, keyfunc KeyFunc) error {
-	if key := e.DuplicateKey(err); key != "" {
+func WrapDuplicateKey(err error, keyfunc KeyFunc) error {
+	if key := DuplicateKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
 			err = e
 		} else if e == NonError {
@@ -53,7 +49,7 @@ func (e err) WrapDuplicateKey(err error, keyfunc KeyFunc) error {
 	return err
 }
 
-func (err) ForeignKey(err error) string {
+func ForeignKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -72,8 +68,8 @@ func (err) ForeignKey(err error) string {
 	return ""
 }
 
-func (e err) WrapForeignKey(err error, keyfunc KeyFunc) error {
-	if key := e.ForeignKey(err); key != "" {
+func WrapForeignKey(err error, keyfunc KeyFunc) error {
+	if key := ForeignKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
 			err = e
 		} else if e == NonError {
@@ -83,7 +79,7 @@ func (e err) WrapForeignKey(err error, keyfunc KeyFunc) error {
 	return err
 }
 
-func (err) WrapNoRows(err, newErr error) error {
+func WrapNoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
 	} else if err == NonError {
@@ -93,7 +89,7 @@ func (err) WrapNoRows(err, newErr error) error {
 	return err
 }
 
-func (err) WrapNoAffects(c int64, err, newErr error) error {
+func WrapNoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
 	} else if err == NonError {
