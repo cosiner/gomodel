@@ -27,11 +27,6 @@ type (
 		InitialModels int
 	}
 
-	Executor interface {
-		Exec(...interface{}) (sql.Result, error)
-		Query(...interface{}) (*sql.Rows, error)
-	}
-
 	ResultType int
 )
 
@@ -229,35 +224,6 @@ func (db *DB) Begin() (Tx, error) {
 		Tx: tx,
 		db: db,
 	}, nil
-}
-
-// Update always returl the count of affected rows
-func Update(exec Executor, err error, args ...interface{}) (int64, error) {
-	return Exec(exec, err, RES_ROWS, args...)
-}
-
-// Exec execute stmt with given arguments and resolve the result if error is nil
-func Exec(exec Executor, err error, typ ResultType, args ...interface{}) (int64, error) {
-	if err != nil {
-		return 0, err
-	}
-
-	res, err := exec.Exec(args...)
-	return ResolveResult(res, err, typ)
-}
-
-// Query execute the query stmt, error stored in Scanner
-func Query(exec Executor, err error, args ...interface{}) (Scanner, *sql.Rows) {
-	if err != nil {
-		return Scanner{err}, nil
-	}
-
-	rows, err := exec.Query(args...)
-	if err != nil {
-		return Scanner{err}, nil
-	}
-
-	return normalScanner, rows
 }
 
 func (db *DB) ExecById(typ uint, is IdSql, resTyp ResultType, args ...interface{}) (int64, error) {

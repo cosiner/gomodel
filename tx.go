@@ -16,7 +16,7 @@ func (tx Tx) Insert(v Model, fields uint, typ ResultType) (int64, error) {
 func (tx Tx) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
 	stmt, err := tx.db.Table(v).PrepareInsert(tx.Tx, fields)
 
-	return Exec(stmt, err, typ, args...)
+	return CloseExec(stmt, err, typ, args...)
 }
 
 func (tx Tx) Update(v Model, fields, whereFields uint) (int64, error) {
@@ -31,7 +31,7 @@ func (tx Tx) Update(v Model, fields, whereFields uint) (int64, error) {
 func (tx Tx) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := tx.db.Table(v).PrepareUpdate(tx.Tx, fields, whereFields)
 
-	return Update(stmt, err, args...)
+	return CloseUpdate(stmt, err, args...)
 }
 
 func (tx Tx) Delete(v Model, whereFields uint) (int64, error) {
@@ -41,13 +41,14 @@ func (tx Tx) Delete(v Model, whereFields uint) (int64, error) {
 func (tx Tx) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
 	stmt, err := tx.db.Table(v).PrepareDelete(tx.Tx, whereFields)
 
-	return Update(stmt, err, args...)
+	return CloseUpdate(stmt, err, args...)
 }
 
 // One select one row from database
+// ArgsOne is unnecessary, just put result in model
 func (tx Tx) One(v Model, fields, whereFields uint) error {
 	stmt, err := tx.db.Table(v).PrepareOne(tx.Tx, fields, whereFields)
-	scanner, rows := Query(stmt, err, FieldVals(v, whereFields)...)
+	scanner, rows := CloseQuery(stmt, err, FieldVals(v, whereFields)...)
 
 	return scanner.One(rows, FieldPtrs(v, fields)...)
 }
@@ -63,7 +64,7 @@ func (tx Tx) Limit(s Store, v Model, fields, whereFields uint, start, count int)
 
 func (tx Tx) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := tx.db.Table(v).PrepareLimit(tx.Tx, fields, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner, rows := CloseQuery(stmt, err, args...)
 
 	return scanner.Limit(rows, s, args[len(args)-1].(int))
 }
@@ -75,7 +76,7 @@ func (tx Tx) All(s Store, v Model, fields, whereFields uint) error {
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (tx Tx) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := tx.db.Table(v).PrepareAll(tx.Tx, fields, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner, rows := CloseQuery(stmt, err, args...)
 
 	return scanner.All(rows, s, tx.db.InitialModels)
 }
@@ -89,7 +90,7 @@ func (tx Tx) Count(v Model, whereFields uint) (count int64, err error) {
 func (tx Tx) ArgsCount(v Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
 	stmt, err := tx.db.Table(v).PrepareCount(tx.Tx, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner, rows := CloseQuery(stmt, err, args...)
 
 	err = scanner.One(rows, &count)
 
