@@ -6,8 +6,8 @@ import (
 )
 
 type Section struct {
-	Columns map[string]map[string][]*sqlparser.ColName
-	Tables  map[string][]struct {
+	Columns map[string]map[string][]*sqlparser.ColName // map[table]map[column][]{ColName}
+	Tables  map[string][]struct {                      // map[table][]{TableName/Subquery}
 		Table    *sqlparser.TableName
 		Subquery *Section
 	}
@@ -45,7 +45,7 @@ func (s *Section) AddColumn(table string, col *sqlparser.ColName) {
 	}
 }
 
-func (s *Section) AddTable(as string, tab *sqlparser.TableName) string {
+func (s *Section) AddTableName(as string, tab *sqlparser.TableName) string {
 	if as == "" {
 		as = string(tab.Name)
 	}
@@ -76,11 +76,11 @@ func (s *Section) Inspect(node sqlparser.SQLNode) {
 	sqlparser.Inspect(node, func(node sqlparser.SQLNode) bool {
 		switch node := node.(type) {
 		case *sqlparser.TableName:
-			table = s.AddTable("", node)
+			table = s.AddTableName("", node)
 		case *sqlparser.AliasedTableExpr:
 			switch tab := node.Expr.(type) {
 			case *sqlparser.TableName:
-				table = s.AddTable(string(node.As), tab)
+				table = s.AddTableName(string(node.As), tab)
 			case *sqlparser.Subquery:
 				table = string(node.As)
 				s.AddSubquery(table).Inspect(tab)

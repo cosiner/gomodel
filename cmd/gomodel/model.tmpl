@@ -23,7 +23,6 @@ const (
 )
 
 var (
-    // DB is the global DB instance
     {{$unexport}}Instance = &{{$normal}}{}
     {{$unexport}}Table = DB.Table({{$unexport}}Instance)
 )

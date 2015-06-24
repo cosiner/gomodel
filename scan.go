@@ -71,8 +71,6 @@ type Scanner struct {
 	Error error
 }
 
-var normalScanner = Scanner{}
-
 func (sc Scanner) multiple(rows *sql.Rows, s Store, count int, all bool) error {
 	if sc.Error != nil {
 		return sc.Error

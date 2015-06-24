@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/cosiner/gohper/defval"
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/os2/path2"
@@ -22,30 +21,25 @@ var (
 )
 
 func init() {
-	flag.StringVar(&outfile, "o", "", "outtput file, default model_gen.go")
-	flag.StringVar(&tmplfile, "t", "", "template file, first find in current directory, else use default file")
+	flag.StringVar(&outfile, "o", "model_gen.go", "output file, default model_gen.go")
+	flag.StringVar(&tmplfile, "t", Tmplfile, "template file, search current directory firstly, use default file $HOME/.config/go/"+Tmplfile+" if not found")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.BoolVar(&useAst, "ast", true, "parse sql ast")
 	flag.Parse()
 
-	defval.String(&outfile, "model_gen.go")
-
-	if tmplfile == "" {
-		tmplfile = TmplName
-		if !file.IsExist(tmplfile) {
-			tmplfile = defTmplPath
-		}
+	if !file.IsExist(tmplfile) {
+		tmplfile = defTmplPath
 	}
 }
 
-const TmplName = "model.tmpl"
+const Tmplfile = "model.tmpl"
 
 // change this if need
-var defTmplPath = filepath.Join(path2.Home(), ".config", "go", TmplName)
+var defTmplPath = filepath.Join(path2.Home(), ".config", "go", Tmplfile)
 
 func main() {
 	if copyTmpl {
-		errors.Fatal(file.Copy(defTmplPath, TmplName))
+		errors.Fatal(file.Copy(defTmplPath, Tmplfile))
 		return
 	}
 	args := flag.Args()

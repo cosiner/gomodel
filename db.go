@@ -1,21 +1,9 @@
 // Package database is a library help for interact with database by model
 package gomodel
 
-import (
-	"database/sql"
-
-	"github.com/cosiner/gohper/bitset"
-)
+import "database/sql"
 
 type (
-	// Model represent a database model
-	Model interface {
-		Table() string
-		// Vals store values of fields to given slice
-		Vals(fields uint, vals []interface{})
-		Ptrs(fields uint, ptrs []interface{})
-	}
-
 	// DB holds database connection, all typeinfos, and sql cache
 	DB struct {
 		// driver string
@@ -26,18 +14,6 @@ type (
 		// initial models count for 'All'
 		InitialModels int
 	}
-
-	ResultType int
-)
-
-const (
-	RES_NO ResultType = iota
-	RES_ID
-	RES_ROWS
-)
-
-var (
-	FieldCount = bitset.BitCountUint
 )
 
 // Open create a database manager and connect to database server
@@ -88,30 +64,6 @@ func (db *DB) Table(v Model) *Table {
 	}
 
 	return db.register(v, table)
-}
-
-func FieldVals(v Model, fields uint, args ...interface{}) []interface{} {
-	c, l := FieldCount(fields), len(args)
-	vals := make([]interface{}, c+l)
-	v.Vals(fields, vals)
-
-	for l = l - 1; l >= 0; l-- {
-		vals[c+l] = args[l]
-	}
-
-	return vals
-}
-
-func FieldPtrs(v Model, fields uint, args ...interface{}) []interface{} {
-	c, l := FieldCount(fields), len(args)
-	ptrs := make([]interface{}, c+l)
-	v.Ptrs(fields, ptrs)
-
-	for l = l - 1; l >= 0; l-- {
-		ptrs[c+l] = args[l]
-	}
-
-	return ptrs
 }
 
 func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
@@ -212,20 +164,6 @@ func (db *DB) Exec(s string, typ ResultType, args ...interface{}) (int64, error)
 	return ResolveResult(res, err, typ)
 }
 
-var emptyTX = Tx{}
-
-func (db *DB) Begin() (Tx, error) {
-	tx, err := db.DB.Begin()
-	if err != nil {
-		return emptyTX, err
-	}
-
-	return Tx{
-		Tx: tx,
-		db: db,
-	}, nil
-}
-
 func (db *DB) ExecById(typ uint, is IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.StmtById(db, typ, is)
 	return Exec(stmt, err, resTyp, args...)
@@ -240,21 +178,16 @@ func (db *DB) QueryById(typ uint, is IdSql, args ...interface{}) (Scanner, *sql.
 	return Query(stmt, err, args...)
 }
 
-// ResolveResult resolve sql result, if need id, return last insert id
-// else return affected rows count
-func ResolveResult(res sql.Result, err error, typ ResultType) (int64, error) {
+var emptyTX = Tx{}
+
+func (db *DB) Begin() (Tx, error) {
+	tx, err := db.DB.Begin()
 	if err != nil {
-		return 0, err
+		return emptyTX, err
 	}
 
-	switch typ {
-	case RES_NO:
-		return 0, nil
-	case RES_ID:
-		return res.LastInsertId()
-	case RES_ROWS:
-		return res.RowsAffected()
-	default:
-		panic("unexpected result type")
-	}
+	return Tx{
+		Tx: tx,
+		db: db,
+	}, nil
 }
