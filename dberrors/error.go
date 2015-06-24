@@ -1,3 +1,4 @@
+// Package dberrors help processing database errors
 package dberrors
 
 import (
