@@ -10,14 +10,20 @@ import (
 )
 
 // Only tested for mysql
+const (
+	// PRIMARY_KEY
+	PRIMARY_KEY = "PRIMARY"
+	NonError    = errors.Err("non error")
+)
 
-// PRIMARY_KEY for composite foreign key
-const PRIMARY_KEY = "PRIMARY"
-const NonError = errors.Err("non error")
+type (
+	KeyError struct {
+		Key   string
+		Error error
+	}
+)
 
-type KeyFunc func(key string) error
-
-func DuplicateKey(err error) string {
+func duplicateKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -39,8 +45,8 @@ func DuplicateKey(err error) string {
 	return ""
 }
 
-func WrapDuplicateKey(err error, keyfunc KeyFunc) error {
-	if key := DuplicateKey(err); key != "" {
+func DuplicateKeyFunc(err error, keyfunc func(key string) error) error {
+	if key := duplicateKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
 			err = e
 		} else if e == NonError {
@@ -50,7 +56,18 @@ func WrapDuplicateKey(err error, keyfunc KeyFunc) error {
 	return err
 }
 
-func ForeignKey(err error) string {
+func DuplicateKeyError(err error, keyError KeyError) error {
+	if key := duplicateKey(err); key != "" {
+		if key == keyError.Key {
+			return keyError.Error
+		}
+		panic("unexpected duplicate key " + keyError.Key)
+	}
+
+	return err
+}
+
+func foreignKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -69,8 +86,8 @@ func ForeignKey(err error) string {
 	return ""
 }
 
-func WrapForeignKey(err error, keyfunc KeyFunc) error {
-	if key := ForeignKey(err); key != "" {
+func ForeignKey(err error, keyfunc func(key string) error) error {
+	if key := foreignKey(err); key != "" {
 		if e := keyfunc(key); e != nil {
 			err = e
 		} else if e == NonError {
@@ -80,7 +97,7 @@ func WrapForeignKey(err error, keyfunc KeyFunc) error {
 	return err
 }
 
-func WrapNoRows(err, newErr error) error {
+func NoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
 	} else if err == NonError {
@@ -90,7 +107,7 @@ func WrapNoRows(err, newErr error) error {
 	return err
 }
 
-func WrapNoAffects(c int64, err, newErr error) error {
+func NoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
 	} else if err == NonError {

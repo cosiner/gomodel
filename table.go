@@ -38,20 +38,20 @@ const (
 )
 
 // FieldsExcp create fieldset except given fields
-func FieldsExcp(numField uint, fields uint) uint {
+func FieldsExcp(numField, fields uint) uint {
 	return (1<<numField - 1) & (^fields)
 }
 
 // FieldsIdentity create signature from fields
-func FieldsIdentity(numField uint, fields, whereFields uint) uint {
+func FieldsIdentity(numField, fields, whereFields uint) uint {
 	return fields<<numField | whereFields
 }
 
 // Stmt get sql from cache container, if cache not exist, then create new
-func (t *Table) Stmt(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
+func (t *Table) Stmt(prepare Preparer, sqlType, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt, err := t.Cache.GetStmt(p, typ, id)
+	sql_, stmt, err := t.Cache.GetStmt(prepare, sqlType, id)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (t *Table) Stmt(p Preparer, typ, fields, whereFields uint, build SQLBuilder
 		sql_ = build(fields, whereFields)
 		sqlPrinter.Print(false, sql_)
 
-		return t.Cache.SetStmt(p, typ, id, sql_)
+		return t.Cache.SetStmt(prepare, sqlType, id, sql_)
 	}
 
 	sqlPrinter.Print(true, sql_)
@@ -68,49 +68,49 @@ func (t *Table) Stmt(p Preparer, typ, fields, whereFields uint, build SQLBuilder
 	return stmt, nil
 }
 
-func (t *Table) StmtInsert(p Preparer, fields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, INSERT, fields, 0, t.SQLInsert)
+func (t *Table) StmtInsert(prepare Preparer, fields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, INSERT, fields, 0, t.SQLInsert)
 }
 
-func (t *Table) StmtUpdate(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, UPDATE, fields, whereFields, t.SQLUpdate)
+func (t *Table) StmtUpdate(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, UPDATE, fields, whereFields, t.SQLUpdate)
 }
 
-func (t *Table) StmtDelete(p Preparer, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, DELETE, 0, whereFields, t.SQLDelete)
+func (t *Table) StmtDelete(prepare Preparer, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, DELETE, 0, whereFields, t.SQLDelete)
 }
 
-func (t *Table) StmtLimit(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, SELECT_LIMIT, fields, whereFields, t.SQLLimit)
+func (t *Table) StmtLimit(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, SELECT_LIMIT, fields, whereFields, t.SQLLimit)
 }
 
-func (t *Table) StmtOne(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, SELECT_ONE, fields, whereFields, t.SQLOne)
+func (t *Table) StmtOne(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, SELECT_ONE, fields, whereFields, t.SQLOne)
 }
 
-func (t *Table) StmtAll(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, SELECT_ALL, fields, whereFields, t.SQLAll)
+func (t *Table) StmtAll(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, SELECT_ALL, fields, whereFields, t.SQLAll)
 }
 
-func (t *Table) StmtCount(p Preparer, whereFields uint) (*sql.Stmt, error) {
-	return t.Stmt(p, SELECT_LIMIT, 0, whereFields, t.SQLCount)
+func (t *Table) StmtCount(prepare Preparer, whereFields uint) (*sql.Stmt, error) {
+	return t.Stmt(prepare, SELECT_LIMIT, 0, whereFields, t.SQLCount)
 }
 
 // Stmt get sql from cache container, if cache not exist, then create new
-func (t *Table) Prepare(p Preparer, typ, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
+func (t *Table) Prepare(prepare Preparer, sqlType, fields, whereFields uint, build SQLBuilder) (*sql.Stmt, error) {
 	id := FieldsIdentity(t.Num, fields, whereFields)
 
-	sql_, stmt, err := t.Cache.PrepareSQL(p, typ, id)
+	sql_, stmt, err := t.Cache.PrepareSQL(prepare, sqlType, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if stmt == nil {
 		sql_ = build(fields, whereFields)
-		t.Cache.SetSQL(typ, id, sql_)
+		t.Cache.SetSQL(sqlType, id, sql_)
 		sqlPrinter.Print(false, sql_)
 
-		stmt, err = p.Prepare(sql_)
+		stmt, err = prepare.Prepare(sql_)
 	} else {
 		sqlPrinter.Print(true, sql_)
 	}
@@ -118,32 +118,32 @@ func (t *Table) Prepare(p Preparer, typ, fields, whereFields uint, build SQLBuil
 	return stmt, err
 }
 
-func (t *Table) PrepareInsert(p Preparer, fields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, INSERT, fields, 0, t.SQLInsert)
+func (t *Table) PrepareInsert(prepare Preparer, fields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, INSERT, fields, 0, t.SQLInsert)
 }
 
-func (t *Table) PrepareUpdate(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, UPDATE, fields, whereFields, t.SQLUpdate)
+func (t *Table) PrepareUpdate(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, UPDATE, fields, whereFields, t.SQLUpdate)
 }
 
-func (t *Table) PrepareDelete(p Preparer, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, DELETE, 0, whereFields, t.SQLDelete)
+func (t *Table) PrepareDelete(prepare Preparer, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, DELETE, 0, whereFields, t.SQLDelete)
 }
 
-func (t *Table) PrepareLimit(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, SELECT_LIMIT, fields, whereFields, t.SQLLimit)
+func (t *Table) PrepareLimit(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, SELECT_LIMIT, fields, whereFields, t.SQLLimit)
 }
 
-func (t *Table) PrepareOne(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, SELECT_ONE, fields, whereFields, t.SQLOne)
+func (t *Table) PrepareOne(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, SELECT_ONE, fields, whereFields, t.SQLOne)
 }
 
-func (t *Table) PrepareAll(p Preparer, fields, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, SELECT_ALL, fields, whereFields, t.SQLAll)
+func (t *Table) PrepareAll(prepare Preparer, fields, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, SELECT_ALL, fields, whereFields, t.SQLAll)
 }
 
-func (t *Table) PrepareCount(p Preparer, whereFields uint) (*sql.Stmt, error) {
-	return t.Prepare(p, SELECT_LIMIT, 0, whereFields, t.SQLCount)
+func (t *Table) PrepareCount(prepare Preparer, whereFields uint) (*sql.Stmt, error) {
+	return t.Prepare(prepare, SELECT_LIMIT, 0, whereFields, t.SQLCount)
 }
 
 // InsertSQL create insert sql for given fields
