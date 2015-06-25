@@ -17,6 +17,9 @@ var (
 	tmplfile string
 	copyTmpl bool
 
+	parseModel bool
+	parseSQL   bool
+
 	useAst bool
 )
 
@@ -25,6 +28,9 @@ func init() {
 	flag.StringVar(&tmplfile, "t", Tmplfile, "template file, search current directory firstly, use default file $HOME/.config/go/"+Tmplfile+" if not found")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.BoolVar(&useAst, "ast", true, "parse sql ast")
+
+	flag.BoolVar(&parseModel, "model", false, "generate model functions")
+	flag.BoolVar(&parseSQL, "sql", false, "generate sqls")
 	flag.Parse()
 
 	if !file.IsExist(tmplfile) {
@@ -47,6 +53,10 @@ func main() {
 		return
 	}
 
+	if !parseSQL && !parseModel {
+		return
+	}
+
 	v := newVisitor()
 	if len(args) == 1 {
 		errors.Fatalln(v.parseDir(args[0]))
@@ -58,25 +68,32 @@ func main() {
 		return
 	}
 
-	errors.Fatal(
-		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
-			var err error
-			for name, sql := range v.SQLs {
-				if useAst {
-					sql, err = v.astConv(sql)
-				} else {
-					sql, err = v.conv(sql)
-				}
-				if err != nil {
-					color.LightRed.Errorf("%s: %s\n", name, err)
-				} else {
-					v.SQLs[name] = sql
-				}
-			}
+	var result struct {
+		Models map[*Model][]*Field
+		SQLs   map[string]string
+	}
 
-			return nil
-		}),
-	)
+	if parseSQL {
+		var err error
+		for name, sql := range v.SQLs {
+			if useAst {
+				sql, err = v.astConv(sql)
+			} else {
+				sql, err = v.conv(sql)
+			}
+			if err != nil {
+				color.LightRed.Errorf("%s: %s\n", name, err)
+			} else {
+				v.SQLs[name] = sql
+			}
+		}
+
+		result.SQLs = v.SQLs
+	}
+
+	if parseModel {
+		result.Models = v.buildModelFields()
+	}
 
 	errors.Fatal(
 		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
@@ -85,13 +102,7 @@ func main() {
 				return err
 			}
 
-			return t.Execute(fd, struct {
-				Models map[*Model][]*Field
-				SQLs   map[string]string
-			}{
-				v.buildModelFields(),
-				v.SQLs,
-			})
+			return t.Execute(fd, result)
 		}),
 	)
 }
