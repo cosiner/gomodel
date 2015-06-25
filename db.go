@@ -48,8 +48,8 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 }
 
 // register save table of model
-func (db *DB) register(v Model, table string) *Table {
-	t := parse(v, db)
+func (db *DB) register(model Model, table string) *Table {
+	t := parse(model, db)
 	db.tables[table] = t
 
 	return t
@@ -57,92 +57,92 @@ func (db *DB) register(v Model, table string) *Table {
 
 // Table return infomation of given model
 // if table not exist, do parse and save it
-func (db *DB) Table(v Model) *Table {
-	table := v.Table()
+func (db *DB) Table(model Model) *Table {
+	table := model.Table()
 	if t, has := db.tables[table]; has {
 		return t
 	}
 
-	return db.register(v, table)
+	return db.register(model, table)
 }
 
-func (db *DB) Insert(v Model, fields uint, typ ResultType) (int64, error) {
-	return db.ArgsInsert(v, fields, typ, FieldVals(v, fields)...)
+func (db *DB) Insert(model Model, fields uint, resType ResultType) (int64, error) {
+	return db.ArgsInsert(model, fields, resType, FieldVals(model, fields)...)
 }
 
-func (db *DB) ArgsInsert(v Model, fields uint, typ ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtInsert(db.DB, fields)
+func (db *DB) ArgsInsert(model Model, fields uint, resType ResultType, args ...interface{}) (int64, error) {
+	stmt, err := db.Table(model).StmtInsert(db.DB, fields)
 
-	return Exec(stmt, err, typ, args...)
+	return Exec(stmt, err, resType, args...)
 }
 
-func (db *DB) Update(v Model, fields, whereFields uint) (int64, error) {
+func (db *DB) Update(model Model, fields, whereFields uint) (int64, error) {
 	c1, c2 := FieldCount(fields), FieldCount(whereFields)
 	args := make([]interface{}, c1+c2)
-	v.Vals(fields, args)
-	v.Vals(whereFields, args[c1:])
+	model.Vals(fields, args)
+	model.Vals(whereFields, args[c1:])
 
-	return db.ArgsUpdate(v, fields, whereFields, args...)
+	return db.ArgsUpdate(model, fields, whereFields, args...)
 }
 
-func (db *DB) ArgsUpdate(v Model, fields, whereFields uint, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtUpdate(db.DB, fields, whereFields)
+func (db *DB) ArgsUpdate(model Model, fields, whereFields uint, args ...interface{}) (int64, error) {
+	stmt, err := db.Table(model).StmtUpdate(db.DB, fields, whereFields)
 
 	return Update(stmt, err, args...)
 }
 
-func (db *DB) Delete(v Model, whereFields uint) (int64, error) {
-	return db.ArgsDelete(v, whereFields, FieldVals(v, whereFields)...)
+func (db *DB) Delete(model Model, whereFields uint) (int64, error) {
+	return db.ArgsDelete(model, whereFields, FieldVals(model, whereFields)...)
 }
 
-func (db *DB) ArgsDelete(v Model, whereFields uint, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(v).StmtDelete(db.DB, whereFields)
+func (db *DB) ArgsDelete(model Model, whereFields uint, args ...interface{}) (int64, error) {
+	stmt, err := db.Table(model).StmtDelete(db.DB, whereFields)
 
 	return Update(stmt, err, args...)
 }
 
 // One select one row from database
-func (db *DB) One(v Model, fields, whereFields uint) error {
-	stmt, err := db.Table(v).StmtOne(db.DB, fields, whereFields)
-	scanner, rows := Query(stmt, err, FieldVals(v, whereFields)...)
+func (db *DB) One(model Model, fields, whereFields uint) error {
+	stmt, err := db.Table(model).StmtOne(db.DB, fields, whereFields)
+	scanner, rows := Query(stmt, err, FieldVals(model, whereFields)...)
 
-	return scanner.One(rows, FieldPtrs(v, fields)...)
+	return scanner.One(rows, FieldPtrs(model, fields)...)
 }
 
-func (db *DB) Limit(s Store, v Model, fields, whereFields uint, start, count int) error {
-	args := FieldVals(v, whereFields, start, count)
+func (db *DB) Limit(store Store, model Model, fields, whereFields uint, start, count int) error {
+	args := FieldVals(model, whereFields, start, count)
 
-	return db.ArgsLimit(s, v, fields, whereFields, args...)
+	return db.ArgsLimit(store, model, fields, whereFields, args...)
 }
 
-func (db *DB) ArgsLimit(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
-	stmt, err := db.Table(v).StmtLimit(db.DB, fields, whereFields)
+func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
+	stmt, err := db.Table(model).StmtLimit(db.DB, fields, whereFields)
 	scanner, rows := Query(stmt, err, args...)
 
-	return scanner.Limit(rows, s, args[len(args)-1].(int))
+	return scanner.Limit(rows, store, args[len(args)-1].(int))
 }
 
-func (db *DB) All(s Store, v Model, fields, whereFields uint) error {
-	return db.ArgsAll(s, v, fields, whereFields, FieldVals(v, whereFields)...)
+func (db *DB) All(store Store, model Model, fields, whereFields uint) error {
+	return db.ArgsAll(store, model, fields, whereFields, FieldVals(model, whereFields)...)
 }
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
-func (db *DB) ArgsAll(s Store, v Model, fields, whereFields uint, args ...interface{}) error {
-	stmt, err := db.Table(v).StmtAll(db.DB, fields, whereFields)
+func (db *DB) ArgsAll(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
+	stmt, err := db.Table(model).StmtAll(db.DB, fields, whereFields)
 	scanner, rows := Query(stmt, err, args...)
 
-	return scanner.All(rows, s, db.InitialModels)
+	return scanner.All(rows, store, db.InitialModels)
 }
 
 // Count return count of rows for model, arguments was extracted from Model
-func (db *DB) Count(v Model, whereFields uint) (count int64, err error) {
-	return db.ArgsCount(v, whereFields, FieldVals(v, whereFields)...)
+func (db *DB) Count(model Model, whereFields uint) (count int64, err error) {
+	return db.ArgsCount(model, whereFields, FieldVals(model, whereFields)...)
 }
 
 //Args Count return count of rows for model use custome arguments
-func (db *DB) ArgsCount(v Model, whereFields uint,
+func (db *DB) ArgsCount(model Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
-	t := db.Table(v)
+	t := db.Table(model)
 
 	stmt, err := t.StmtCount(db.DB, whereFields)
 	scanner, rows := Query(stmt, err, args...)
@@ -153,28 +153,28 @@ func (db *DB) ArgsCount(v Model, whereFields uint,
 }
 
 // ExecUpdate execute a update operation, return resolved result
-func (db *DB) ExecUpdate(s string, needId bool, args ...interface{}) (int64, error) {
-	return db.Exec(s, RES_ROWS, args...)
+func (db *DB) ExecUpdate(sql string, args ...interface{}) (int64, error) {
+	return db.Exec(sql, RES_ROWS, args...)
 }
 
 // Exec execute a update operation, return resolved result
-func (db *DB) Exec(s string, typ ResultType, args ...interface{}) (int64, error) {
-	res, err := db.DB.Exec(s, args...)
+func (db *DB) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
+	res, err := db.DB.Exec(sql, args...)
 
-	return ResolveResult(res, err, typ)
+	return ResolveResult(res, err, resType)
 }
 
-func (db *DB) ExecById(typ uint, is IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.StmtById(db, typ, is)
+func (db *DB) ExecById(sqlType uint, idsql IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
+	stmt, err := db.StmtById(db, sqlType, idsql)
 	return Exec(stmt, err, resTyp, args...)
 }
 
-func (db *DB) UpdateById(typ uint, is IdSql, args ...interface{}) (int64, error) {
-	return db.ExecById(typ, is, RES_ROWS, args...)
+func (db *DB) UpdateById(sqlType uint, idsql IdSql, args ...interface{}) (int64, error) {
+	return db.ExecById(sqlType, idsql, RES_ROWS, args...)
 }
 
-func (db *DB) QueryById(typ uint, is IdSql, args ...interface{}) (Scanner, *sql.Rows) {
-	stmt, err := db.StmtById(db, typ, is)
+func (db *DB) QueryById(sqlType uint, idsql IdSql, args ...interface{}) (Scanner, *sql.Rows) {
+	stmt, err := db.StmtById(db, sqlType, idsql)
 	return Query(stmt, err, args...)
 }
 

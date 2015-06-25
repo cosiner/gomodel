@@ -50,12 +50,12 @@ var (
 //
 // the DB instance and each Table already embed a Cache, typically, it's not
 // necessary to call this
-func NewCache(types uint) Cache {
+func NewCache(sqlTypes uint) Cache {
 	c := Cache{
-		cache: make([]map[uint]cacheItem, types),
+		cache: make([]map[uint]cacheItem, sqlTypes),
 	}
 
-	for i := uint(0); i < types; i++ {
+	for i := uint(0); i < sqlTypes; i++ {
 		c.cache[i] = make(map[uint]cacheItem)
 	}
 
@@ -70,20 +70,20 @@ func NewCache(types uint) Cache {
 // newType1 := c.ExtendType(c.Types()+1)
 // //b.go
 // newType2 := c.ExtendType(c.Types()+1)
-func (c *Cache) ExtendType(typ uint) uint {
-	if l := uint(len(c.cache)); typ > l {
-		cache := make([]map[uint]cacheItem, typ)
+func (c *Cache) ExtendType(sqlType uint) uint {
+	if l := uint(len(c.cache)); sqlType > l {
+		cache := make([]map[uint]cacheItem, sqlType)
 		copy(cache, c.cache)
 
-		for ; l < typ; l++ {
+		for ; l < sqlType; l++ {
 			cache[l] = make(map[uint]cacheItem)
 		}
 		c.cache = cache
 	} else {
-		c.cache = c.cache[:typ]
+		c.cache = c.cache[:sqlType]
 	}
 
-	return typ - 1
+	return sqlType - 1
 }
 
 // Types return the sql types count of current Cache
@@ -94,49 +94,49 @@ func (c *Cache) Types() uint {
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c *Cache) StmtById(p Preparer, typ uint, is IdSql) (*sql.Stmt, error) {
-	if item, has := c.cache[typ][is.ID]; has {
+func (c *Cache) StmtById(prepare Preparer, sqlType uint, idsql IdSql) (*sql.Stmt, error) {
+	if item, has := c.cache[sqlType][idsql.ID]; has {
 		sqlPrinter.Print(true, item.sql)
 
 		return item.stmt, nil
 	}
 
-	sql_ := is.SQL
+	sql_ := idsql.SQL
 	sqlPrinter.Print(false, sql_)
 
-	stmt, err := p.Prepare(sql_)
+	stmt, err := prepare.Prepare(sql_)
 	if err != nil {
 		return nil, err
 	}
 
-	c.cache[typ][is.ID] = cacheItem{sql: sql_, stmt: stmt}
+	c.cache[sqlType][idsql.ID] = cacheItem{sql: sql_, stmt: stmt}
 
 	return stmt, nil
 }
 
 // GetStmt get sql and statement from cacher, if not found, "" and nil was returned
-func (c *Cache) GetStmt(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
-	item, has := c.cache[typ][id]
+func (c *Cache) GetStmt(prepare Preparer, sqlType, sqlId uint) (string, *sql.Stmt, error) {
+	item, has := c.cache[sqlType][sqlId]
 	if !has {
 		return "", nil, nil
 	}
 
 	var err error
 	if item.stmt == nil {
-		item.stmt, err = p.Prepare(item.sql)
+		item.stmt, err = prepare.Prepare(item.sql)
 	}
 
 	return item.sql, item.stmt, err
 }
 
 // SetStmt prepare a sql to statement, cache then return it
-func (c *Cache) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, error) {
-	stmt, err := p.Prepare(sql)
+func (c *Cache) SetStmt(prepare Preparer, sqlType uint, sqlId uint, sql string) (*sql.Stmt, error) {
+	stmt, err := prepare.Prepare(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	c.cache[typ][id] = cacheItem{
+	c.cache[sqlType][sqlId] = cacheItem{
 		sql:  sql,
 		stmt: stmt,
 	}
@@ -144,31 +144,31 @@ func (c *Cache) SetStmt(p Preparer, typ uint, id uint, sql string) (*sql.Stmt, e
 	return stmt, nil
 }
 
-func (c *Cache) PrepareById(p Preparer, typ uint, is IdSql) (*sql.Stmt, error) {
-	item, has := c.cache[typ][is.ID]
+func (c *Cache) PrepareById(prepare Preparer, sqlType uint, idsql IdSql) (*sql.Stmt, error) {
+	item, has := c.cache[sqlType][idsql.ID]
 	if !has {
-		item.sql = is.SQL
-		c.cache[typ][is.ID] = item
+		item.sql = idsql.SQL
+		c.cache[sqlType][idsql.ID] = item
 	}
 
 	sqlPrinter.Print(has, item.sql)
 
-	stmt, err := p.Prepare(item.sql)
+	stmt, err := prepare.Prepare(item.sql)
 	return stmt, err
 }
 
-func (c *Cache) PrepareSQL(p Preparer, typ, id uint) (string, *sql.Stmt, error) {
-	item, has := c.cache[typ][id]
+func (c *Cache) PrepareSQL(prepare Preparer, sqlType, sqlId uint) (string, *sql.Stmt, error) {
+	item, has := c.cache[sqlType][sqlId]
 	if !has {
 		return "", nil, nil
 	}
 
-	stmt, err := p.Prepare(item.sql)
+	stmt, err := prepare.Prepare(item.sql)
 	return item.sql, stmt, err
 }
 
-func (c *Cache) SetSQL(typ, id uint, sql string) {
-	c.cache[typ][id] = cacheItem{
+func (c *Cache) SetSQL(sqlType, sqlId uint, sql string) {
+	c.cache[sqlType][sqlId] = cacheItem{
 		sql: sql,
 	}
 }
