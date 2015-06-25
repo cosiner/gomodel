@@ -16,13 +16,6 @@ const (
 	NonError    = errors.Err("non error")
 )
 
-type (
-	KeyError struct {
-		Key   string
-		Error error
-	}
-)
-
 func duplicateKey(err error) string {
 	if err == nil {
 		return ""
@@ -56,12 +49,13 @@ func DuplicateKeyFunc(err error, keyfunc func(key string) error) error {
 	return err
 }
 
-func DuplicateKeyError(err error, keyError KeyError) error {
-	if key := duplicateKey(err); key != "" {
-		if key == keyError.Key {
-			return keyError.Error
+func DuplicateKeyError(err error, key string, newErr error) error {
+	if k := duplicateKey(err); k != "" {
+		if k == key {
+			return newErr
 		}
-		panic("unexpected duplicate key " + keyError.Key)
+
+		panic("unexpected duplicate key " + key)
 	}
 
 	return err
