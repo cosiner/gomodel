@@ -1,3 +1,8 @@
+# gomodel
+```sh
+$ gomodel [OPTIONS] DIR|FILES...
+```
+
 # Structure tags
 * `table`: table name
 * `column`: column name

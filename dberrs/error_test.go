@@ -1,4 +1,4 @@
-package dberrors
+package dberrs
 
 import (
 	"testing"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -24,13 +25,18 @@ var (
 )
 
 func init() {
-	flag.StringVar(&outfile, "o", "model_gen.go", "output file, default model_gen.go")
+	flag.StringVar(&outfile, "o", "model_gen.go", "output file")
 	flag.StringVar(&tmplfile, "t", Tmplfile, "template file, search current directory firstly, use default file $HOME/.config/go/"+Tmplfile+" if not found")
 	flag.BoolVar(&copyTmpl, "cp", false, "copy tmpl file to default path")
 	flag.BoolVar(&useAst, "ast", true, "parse sql ast")
 
 	flag.BoolVar(&parseModel, "model", false, "generate model functions")
 	flag.BoolVar(&parseSQL, "sql", false, "generate sqls")
+
+	flag.Usage = func() {
+		fmt.Println("gomodel [OPTIONS] DIR|FILES...")
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
 	if !file.IsExist(tmplfile) {
@@ -50,10 +56,12 @@ func main() {
 	}
 	args := flag.Args()
 	if len(args) == 0 {
+		flag.Usage()
 		return
 	}
 
 	if !parseSQL && !parseModel {
+		fmt.Println("neighter -model nor -sql are specified.")
 		return
 	}
 
@@ -65,6 +73,7 @@ func main() {
 	}
 
 	if len(v.Models) == 0 {
+		fmt.Println("no models found.")
 		return
 	}
 

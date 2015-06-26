@@ -1,5 +1,5 @@
-// Package dberrors help processing database errors
-package dberrors
+// Package dberrs help processing database errors
+package dberrs
 
 import (
 	"database/sql"
