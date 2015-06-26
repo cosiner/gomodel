@@ -20,8 +20,11 @@ type User struct {
     Age int
     Name string
 }
-
+```
+```sh
 $ gomodel -model -sql user.go
+```
+Generated:
 ```Go
 const (
     USER_ID uint = 1 << iota
@@ -31,6 +34,8 @@ const (
     userFieldsAll = 1 << userFieldsEnd - 1
 )
 ```
+etc...
+
 * __DB__
 ```Go
 db := gomodel.NewDB()

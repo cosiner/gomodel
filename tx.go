@@ -62,6 +62,7 @@ func (tx Tx) Limit(store Store, model Model, fields, whereFields uint, start, co
 	return tx.ArgsLimit(store, model, fields, whereFields, args...)
 }
 
+// The last two arguments must be "start" and "count" of limition with type "int"
 func (tx Tx) ArgsLimit(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := tx.db.Table(model).PrepareLimit(tx.Tx, fields, whereFields)
 	scanner, rows := CloseQuery(stmt, err, args...)

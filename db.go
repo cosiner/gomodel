@@ -115,6 +115,7 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint, start, c
 	return db.ArgsLimit(store, model, fields, whereFields, args...)
 }
 
+// The last two arguments must be "start" and "count" of limition with type "int"
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtLimit(db.DB, fields, whereFields)
 	scanner, rows := Query(stmt, err, args...)
