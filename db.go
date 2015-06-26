@@ -140,7 +140,7 @@ func (db *DB) Count(model Model, whereFields uint) (count int64, err error) {
 	return db.ArgsCount(model, whereFields, FieldVals(model, whereFields)...)
 }
 
-//Args Count return count of rows for model use custome arguments
+// ArgsCount return count of rows for model use custome arguments
 func (db *DB) ArgsCount(model Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
 	t := db.Table(model)

@@ -87,7 +87,7 @@ func (tx Tx) Count(model Model, whereFields uint) (count int64, err error) {
 	return tx.ArgsCount(model, whereFields, FieldVals(model, whereFields)...)
 }
 
-//Args Count return count of rows for model use custome arguments
+// ArgsCount return count of rows for model use custome arguments
 func (tx Tx) ArgsCount(model Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
 	stmt, err := tx.db.Table(model).PrepareCount(tx.Tx, whereFields)
@@ -108,4 +108,16 @@ func (tx Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, e
 	res, err := tx.Tx.Exec(sql, args...)
 
 	return ResolveResult(res, err, resType)
+}
+
+// Done check if error is nil then commit transaction, otherwise rollback, the error
+// will be returned without change.
+func (tx Tx) Done(err error) error {
+	if err == nil {
+		_ = tx.Commit()
+	} else {
+		_ = tx.Rollback()
+	}
+
+	return err
 }
