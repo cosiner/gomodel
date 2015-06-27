@@ -117,23 +117,52 @@ func (tx Tx) ExecUpdate(sql string, args ...interface{}) (int64, error) {
 	return tx.Exec(sql, RES_ROWS, args...)
 }
 
-// Exec execute a update operation, return resolved result
+// Exec execute a update operation, return rows affected
 func (tx Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
 	res, err := tx.Tx.Exec(sql, args...)
 
 	return ResolveResult(res, err, resType)
 }
 
-// Done check if error is nil then commit transaction, otherwise rollback, the error
-// will be returned without change.
+// Done check if error is nil then commit transaction, otherwise rollback.
+// Done should be called only once, otherwise it will panic.
+// Done should be called in deferred function to avoid uncommitted/unrollbacked
+// transaction caused by panic.
+//
+// Example:
+//  func operation() (err error) {
+//  	tx, err := db.Begin()
+//  	if err != nil {
+//  		return err
+//  	}
+//
+//      defer func() {
+//      	err = tx.Done(err)
+//      }()
+//  	// Or: defer tx.DeferredDone(&err)
+//
+//  	// do something
+//
+//  	return // err must be a named return value, otherwise, error in deferred
+//  	       // function will be lost
+//  }
 func (tx Tx) Done(err error) error {
 	if err == nil {
-		_ = tx.Commit()
+		err = tx.Commit()
+		if err == sql.ErrTxDone {
+			panic("commit transaction twice")
+		}
 	} else {
-		_ = tx.Rollback()
+		if tx.Rollback() == sql.ErrTxDone {
+			panic("rollback a committed/rollbacked transaction")
+		}
 	}
 
 	return err
+}
+
+func (tx Tx) DeferredDone(err *error) {
+	*err = tx.Done(*err)
 }
 
 func (tx Tx) PrepareById(idsql IdSql) (*sql.Stmt, error) {
