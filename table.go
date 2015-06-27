@@ -23,8 +23,8 @@ type (
 	// you should not use a empty fields for limit select, that will conflict with
 	// count sql and get the wrong sql statement.
 	Table struct {
-		Name string
-		Num  uint64
+		Name      string
+		NumFields uint64
 		cache
 
 		columns        []string
@@ -41,7 +41,7 @@ func FieldsIdentity(sqlType SQLType, numField, fields, whereFields uint64) uint6
 
 // Stmt get sql from cache container, if cache not exist, then create new
 func (t *Table) Stmt(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (*sql.Stmt, error) {
-	id := FieldsIdentity(sqlType, t.Num, fields, whereFields)
+	id := FieldsIdentity(sqlType, t.NumFields, fields, whereFields)
 
 	sql_, stmt, err := t.cache.GetStmt(prepare, id)
 	if err != nil {
@@ -94,7 +94,7 @@ func (t *Table) StmtIncrBy(prepare Preparer, field, whereFields uint64) (*sql.St
 
 // Stmt get sql from cache container, if cache not exist, then create new
 func (t *Table) Prepare(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (*sql.Stmt, error) {
-	id := FieldsIdentity(sqlType, t.Num, fields, whereFields)
+	id := FieldsIdentity(sqlType, t.NumFields, fields, whereFields)
 
 	sql_, stmt, err := t.cache.PrepareSQL(prepare, id)
 	if err != nil {
@@ -207,6 +207,7 @@ func (t *Table) SQLIncrBy(field, whereFields uint64) string {
 	}
 
 	col := t.Col(field)
+
 	return fmt.Sprintf("UPDATE %s SET %s=%s+? %s",
 		t.Name,
 		col,
@@ -335,12 +336,13 @@ func parse(v Model, db *DB) *Table {
 		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
 	}
 
+	cols = slices.FitCapToLenForString(cols)
 	return &Table{
-		Num:   uint64(num),
-		Name:  v.Table(),
-		cache: newCache(),
+		NumFields: uint64(len(cols)),
+		Name:      v.Table(),
+		cache:     newCache(),
 
-		columns:        slices.FitCapToLenForString(cols),
+		columns:        cols,
 		prefix:         v.Table() + ".",
 		colsCache:      make(map[uint64]Cols),
 		typedColsCache: make(map[uint64]Cols),
