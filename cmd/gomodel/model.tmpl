@@ -11,7 +11,7 @@ var (
 {{$self := $model.Self}}
 {{$recv := (printf "(%s *%s)" $self $normal)}}
 const (
-    {{range $index, $field := $fields}}{{$upper}}_{{$field.Upper}} {{if eq $index  0}} uint = 1 << iota {{end}}
+    {{range $index, $field := $fields}}{{$upper}}_{{$field.Upper}} {{if eq $index  0}} uint64 = 1 << iota {{end}}
     {{end}}
     {{$unexport}}FieldEnd = iota
     {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
@@ -31,7 +31,7 @@ func {{$recv}} Table() string {
     return "{{$model.Table}}"
 }
 
-func {{$recv}} Vals(fields uint, vals []interface{}) {
+func {{$recv}} Vals(fields uint64, vals []interface{}) {
     if fields != 0 {
     if fields == {{$unexport}}FieldsAll {
         {{range $index, $field:=$fields}}vals[{{$index}}]={{$self}}.{{$field.Name}}
@@ -46,7 +46,7 @@ func {{$recv}} Vals(fields uint, vals []interface{}) {
     }
 }
 
-func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
+func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     if fields != 0 {
         if fields == {{$unexport}}FieldsAll {
         {{range $index, $field:=$fields}}ptrs[{{$index}}]=&({{$self}}.{{$field.Name}})
@@ -64,7 +64,7 @@ func {{$recv}} Ptrs(fields uint, ptrs []interface{}) {
 type (
     {{$unexport}}s struct {
         Values []{{$normal}}
-        Fields uint
+        Fields uint64
     }
 )
 

@@ -55,7 +55,7 @@ func DuplicateKeyError(err error, key string, newErr error) error {
 			return newErr
 		}
 
-		panic("unexpected duplicate key " + key)
+		panic("unexpected duplicate key: " + k + ", expect: " + key)
 	}
 
 	return err

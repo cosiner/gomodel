@@ -3,11 +3,11 @@ package gomodel
 import "sync/atomic"
 
 var (
-	currId uint32
+	currId uint64
 )
 
 type IdSql struct {
-	ID  uint
+	ID  uint64
 	SQL string
 }
 
@@ -27,7 +27,7 @@ func NewIdSql(create interface{}) IdSql {
 	}
 
 	return IdSql{
-		ID:  uint(atomic.AddUint32(&currId, 1)),
+		ID:  atomic.AddUint64(&currId, 1),
 		SQL: sql,
 	}
 }
