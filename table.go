@@ -25,7 +25,7 @@ type (
 	Table struct {
 		Name      string
 		NumFields uint64
-		cache
+		cache cache
 
 		columns        []string
 		prefix         string // Name + "."

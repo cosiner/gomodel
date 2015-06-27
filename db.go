@@ -9,7 +9,7 @@ type (
 		// driver string
 		*sql.DB
 		tables map[string]*Table
-		cache
+		cache  cache
 
 		// initial models count for 'All'
 		InitialModels int
@@ -179,7 +179,7 @@ func (db *DB) Exec(sql string, resType ResultType, args ...interface{}) (int64, 
 }
 
 func (db *DB) ExecById(idsql IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.StmtById(db, idsql)
+	stmt, err := db.StmtById(idsql)
 
 	return Exec(stmt, err, resTyp, args...)
 }
@@ -189,7 +189,7 @@ func (db *DB) UpdateById(idsql IdSql, args ...interface{}) (int64, error) {
 }
 
 func (db *DB) QueryById(idsql IdSql, args ...interface{}) Scanner {
-	stmt, err := db.StmtById(db, idsql)
+	stmt, err := db.StmtById(idsql)
 
 	return Query(stmt, err, args...)
 }
@@ -206,4 +206,8 @@ func (db *DB) Begin() (Tx, error) {
 		Tx: tx,
 		db: db,
 	}, nil
+}
+
+func (db *DB) StmtById(idsql IdSql) (*sql.Stmt, error) {
+	return db.cache.StmtById(db.DB, idsql)
 }

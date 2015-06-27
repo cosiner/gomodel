@@ -135,3 +135,7 @@ func (tx Tx) Done(err error) error {
 
 	return err
 }
+
+func (tx Tx) PrepareById(idsql IdSql) (*sql.Stmt, error) {
+	return tx.db.cache.PrepareById(tx.Tx, idsql)
+}
