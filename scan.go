@@ -49,6 +49,8 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 	)
 
 	rows := sc.Rows
+	defer rows.Close()
+
 	for rows.Next() && (index < count || scanType == _SCAN_ALL) {
 		if index == 0 {
 			cols, _ := rows.Columns()
@@ -61,8 +63,6 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 		}
 
 		if err = rows.Scan(ptrs...); err != nil {
-			_ = rows.Close()
-
 			return err
 		}
 		index++
@@ -73,7 +73,6 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 	} else {
 		s.Make(index)
 	}
-	_ = rows.Close()
 
 	return err
 }
@@ -91,15 +90,15 @@ func (sc Scanner) One(ptrs ...interface{}) error {
 		return sc.Error
 	}
 
-	var err error
-
 	rows := sc.Rows
+	defer rows.Close()
+
+	var err error
 	if rows.Next() {
 		err = rows.Scan(ptrs...)
 	} else {
 		err = sql.ErrNoRows
 	}
-	_ = rows.Close()
 
 	return err
 }
