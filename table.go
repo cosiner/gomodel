@@ -261,7 +261,7 @@ func (t *Table) TabCol(field uint) string {
 // otherwise, type cols was returned
 func (t *Table) cols(fields uint, prefix string) Cols {
 	fieldNames := t.columns
-	if colCount := FieldCount(fields); colCount > 1 {
+	if colCount := NumFields(fields); colCount > 1 {
 		names := make([]string, colCount)
 		var index int
 		for i, l := uint(0), uint(len(fieldNames)); i < l; i++ {

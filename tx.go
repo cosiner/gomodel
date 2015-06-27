@@ -20,7 +20,7 @@ func (tx Tx) ArgsInsert(model Model, fields uint, resType ResultType, args ...in
 }
 
 func (tx Tx) Update(model Model, fields, whereFields uint) (int64, error) {
-	c1, c2 := FieldCount(fields), FieldCount(whereFields)
+	c1, c2 := NumFields(fields), NumFields(whereFields)
 	args := make([]interface{}, c1+c2)
 	model.Vals(fields, args)
 	model.Vals(whereFields, args[c1:])
@@ -48,13 +48,13 @@ func (tx Tx) ArgsDelete(model Model, whereFields uint, args ...interface{}) (int
 // ArgsOne is unnecessary, just put result in model
 func (tx Tx) One(model Model, fields, whereFields uint) error {
 	stmt, err := tx.db.Table(model).PrepareOne(tx.Tx, fields, whereFields)
-	scanner, rows := CloseQuery(stmt, err, FieldVals(model, whereFields)...)
+	scanner := CloseQuery(stmt, err, FieldVals(model, whereFields)...)
 
-	return scanner.One(rows, FieldPtrs(model, fields)...)
+	return scanner.One(FieldPtrs(model, fields)...)
 }
 
 func (tx Tx) Limit(store Store, model Model, fields, whereFields uint, start, count int) error {
-	c := FieldCount(whereFields)
+	c := NumFields(whereFields)
 	args := make([]interface{}, c+2)
 	model.Vals(whereFields, args)
 	args[c], args[c+1] = start, count
@@ -65,9 +65,9 @@ func (tx Tx) Limit(store Store, model Model, fields, whereFields uint, start, co
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (tx Tx) ArgsLimit(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := tx.db.Table(model).PrepareLimit(tx.Tx, fields, whereFields)
-	scanner, rows := CloseQuery(stmt, err, args...)
+	scanner := CloseQuery(stmt, err, args...)
 
-	return scanner.Limit(rows, store, args[len(args)-1].(int))
+	return scanner.Limit(store, args[len(args)-1].(int))
 }
 
 func (tx Tx) All(store Store, model Model, fields, whereFields uint) error {
@@ -77,9 +77,9 @@ func (tx Tx) All(store Store, model Model, fields, whereFields uint) error {
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (tx Tx) ArgsAll(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := tx.db.Table(model).PrepareAll(tx.Tx, fields, whereFields)
-	scanner, rows := CloseQuery(stmt, err, args...)
+	scanner := CloseQuery(stmt, err, args...)
 
-	return scanner.All(rows, store, tx.db.InitialModels)
+	return scanner.All(store, tx.db.InitialModels)
 }
 
 // Count return count of rows for model, arguments was extracted from Model
@@ -91,9 +91,9 @@ func (tx Tx) Count(model Model, whereFields uint) (count int64, err error) {
 func (tx Tx) ArgsCount(model Model, whereFields uint,
 	args ...interface{}) (count int64, err error) {
 	stmt, err := tx.db.Table(model).PrepareCount(tx.Tx, whereFields)
-	scanner, rows := CloseQuery(stmt, err, args...)
+	scanner := CloseQuery(stmt, err, args...)
 
-	err = scanner.One(rows, &count)
+	err = scanner.One(&count)
 
 	return
 }

@@ -77,7 +77,7 @@ func (db *DB) ArgsInsert(model Model, fields uint, resType ResultType, args ...i
 }
 
 func (db *DB) Update(model Model, fields, whereFields uint) (int64, error) {
-	c1, c2 := FieldCount(fields), FieldCount(whereFields)
+	c1, c2 := NumFields(fields), NumFields(whereFields)
 	args := make([]interface{}, c1+c2)
 	model.Vals(fields, args)
 	model.Vals(whereFields, args[c1:])
@@ -104,9 +104,9 @@ func (db *DB) ArgsDelete(model Model, whereFields uint, args ...interface{}) (in
 // One select one row from database
 func (db *DB) One(model Model, fields, whereFields uint) error {
 	stmt, err := db.Table(model).StmtOne(db.DB, fields, whereFields)
-	scanner, rows := Query(stmt, err, FieldVals(model, whereFields)...)
+	scanner := Query(stmt, err, FieldVals(model, whereFields)...)
 
-	return scanner.One(rows, FieldPtrs(model, fields)...)
+	return scanner.One(FieldPtrs(model, fields)...)
 }
 
 func (db *DB) Limit(store Store, model Model, fields, whereFields uint, start, count int) error {
@@ -118,21 +118,21 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint, start, c
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtLimit(db.DB, fields, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner := Query(stmt, err, args...)
 
-	return scanner.Limit(rows, store, args[len(args)-1].(int))
+	return scanner.Limit(store, args[len(args)-1].(int))
 }
 
 func (db *DB) All(store Store, model Model, fields, whereFields uint) error {
 	return db.ArgsAll(store, model, fields, whereFields, FieldVals(model, whereFields)...)
 }
 
-// ArgsAll select all rows, the last two argument must be "start" and "count"
+// ArgsAll select all  the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(store Store, model Model, fields, whereFields uint, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtAll(db.DB, fields, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner := Query(stmt, err, args...)
 
-	return scanner.All(rows, store, db.InitialModels)
+	return scanner.All(store, db.InitialModels)
 }
 
 // Count return count of rows for model, arguments was extracted from Model
@@ -146,9 +146,9 @@ func (db *DB) ArgsCount(model Model, whereFields uint,
 	t := db.Table(model)
 
 	stmt, err := t.StmtCount(db.DB, whereFields)
-	scanner, rows := Query(stmt, err, args...)
+	scanner := Query(stmt, err, args...)
 
-	err = scanner.One(rows, &count)
+	err = scanner.One(&count)
 
 	return
 }
@@ -167,6 +167,7 @@ func (db *DB) Exec(sql string, resType ResultType, args ...interface{}) (int64, 
 
 func (db *DB) ExecById(sqlType uint, idsql IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.StmtById(db, sqlType, idsql)
+
 	return Exec(stmt, err, resTyp, args...)
 }
 
@@ -174,8 +175,9 @@ func (db *DB) UpdateById(sqlType uint, idsql IdSql, args ...interface{}) (int64,
 	return db.ExecById(sqlType, idsql, RES_ROWS, args...)
 }
 
-func (db *DB) QueryById(sqlType uint, idsql IdSql, args ...interface{}) (Scanner, *sql.Rows) {
+func (db *DB) QueryById(sqlType uint, idsql IdSql, args ...interface{}) Scanner {
 	stmt, err := db.StmtById(db, sqlType, idsql)
+
 	return Query(stmt, err, args...)
 }
 
