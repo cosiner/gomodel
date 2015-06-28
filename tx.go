@@ -54,10 +54,7 @@ func (tx Tx) One(model Model, fields, whereFields uint64) error {
 }
 
 func (tx Tx) Limit(store Store, model Model, fields, whereFields uint64, start, count int) error {
-	c := NumFields(whereFields)
-	args := make([]interface{}, c+2)
-	model.Vals(whereFields, args)
-	args[c], args[c+1] = start, count
+	args := FieldVals(model, whereFields, start, count)
 
 	return tx.ArgsLimit(store, model, fields, whereFields, args...)
 }
@@ -167,7 +164,7 @@ func (tx Tx) Done(err error) error {
 	return err
 }
 
-func (tx Tx) DeferredDone(err *error) {
+func (tx Tx) DeferDone(err *error) {
 	*err = tx.Done(*err)
 }
 

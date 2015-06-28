@@ -55,6 +55,18 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     }
 }
 
+func {{$recv}} txDo(do func(gomodel.Tx, *{{$normal}}) error) (err error) {
+    tx, err := DB.Begin()
+    if err != nil {
+        return
+    }
+
+    defer tx.DeferDone(&err)
+
+    err = do(tx, {{$self}})
+    return
+}
+
 type (
     {{$unexport}}s struct {
         Values []{{$normal}}

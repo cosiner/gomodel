@@ -210,6 +210,18 @@ func (db *DB) Begin() (Tx, error) {
 	}, nil
 }
 
+func (db *DB) TxDo(fn func(Tx) error) (err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return
+	}
+
+	defer tx.DeferDone(&err)
+
+	err = fn(tx)
+	return
+}
+
 func (db *DB) StmtById(sqlid uint64) (*sql.Stmt, error) {
 	return db.cache.StmtById(db, sqlid)
 }

@@ -28,10 +28,10 @@ func FieldsExcp(numField, fields uint64) uint64 {
 
 // FieldVals will extract values of fields from model, and concat with remains
 // arguments
-func FieldVals(v Model, fields uint64, args ...interface{}) []interface{} {
+func FieldVals(model Model, fields uint64, args ...interface{}) []interface{} {
 	c, l := NumFields(fields), len(args)
 	vals := make([]interface{}, c+l)
-	v.Vals(fields, vals)
+	model.Vals(fields, vals)
 
 	for l = l - 1; l >= 0; l-- {
 		vals[c+l] = args[l]
@@ -41,10 +41,10 @@ func FieldVals(v Model, fields uint64, args ...interface{}) []interface{} {
 }
 
 // FieldPtrs is similar to FieldVals, but for field pointers
-func FieldPtrs(v Model, fields uint64, args ...interface{}) []interface{} {
+func FieldPtrs(model Model, fields uint64, args ...interface{}) []interface{} {
 	c, l := NumFields(fields), len(args)
 	ptrs := make([]interface{}, c+l)
-	v.Ptrs(fields, ptrs)
+	model.Ptrs(fields, ptrs)
 
 	for l = l - 1; l >= 0; l-- {
 		ptrs[c+l] = args[l]
