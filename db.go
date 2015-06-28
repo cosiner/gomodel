@@ -26,6 +26,8 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 
 // New create a new db structure
 func NewDB() *DB {
+	initSqlStore()
+
 	return &DB{
 		tables:        make(map[string]*Table),
 		InitialModels: 10,
@@ -71,7 +73,7 @@ func (db *DB) Insert(model Model, fields uint64, resType ResultType) (int64, err
 }
 
 func (db *DB) ArgsInsert(model Model, fields uint64, resType ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(model).StmtInsert(db.DB, fields)
+	stmt, err := db.Table(model).StmtInsert(db, fields)
 
 	return Exec(stmt, err, resType, args...)
 }
@@ -86,7 +88,7 @@ func (db *DB) Update(model Model, fields, whereFields uint64) (int64, error) {
 }
 
 func (db *DB) ArgsUpdate(model Model, fields, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(model).StmtUpdate(db.DB, fields, whereFields)
+	stmt, err := db.Table(model).StmtUpdate(db, fields, whereFields)
 
 	return Update(stmt, err, args...)
 }
@@ -96,14 +98,14 @@ func (db *DB) Delete(model Model, whereFields uint64) (int64, error) {
 }
 
 func (db *DB) ArgsDelete(model Model, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(model).StmtDelete(db.DB, whereFields)
+	stmt, err := db.Table(model).StmtDelete(db, whereFields)
 
 	return Update(stmt, err, args...)
 }
 
 // One select one row from database
 func (db *DB) One(model Model, fields, whereFields uint64) error {
-	stmt, err := db.Table(model).StmtOne(db.DB, fields, whereFields)
+	stmt, err := db.Table(model).StmtOne(db, fields, whereFields)
 	scanner := Query(stmt, err, FieldVals(model, whereFields)...)
 
 	return scanner.One(FieldPtrs(model, fields)...)
@@ -117,7 +119,7 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start,
 
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
-	stmt, err := db.Table(model).StmtLimit(db.DB, fields, whereFields)
+	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
 
 	return scanner.Limit(store, args[len(args)-1].(int))
@@ -129,7 +131,7 @@ func (db *DB) All(store Store, model Model, fields, whereFields uint64) error {
 
 // ArgsAll select all  the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
-	stmt, err := db.Table(model).StmtAll(db.DB, fields, whereFields)
+	stmt, err := db.Table(model).StmtAll(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
 
 	return scanner.All(store, db.InitialModels)
@@ -144,7 +146,7 @@ func (db *DB) Count(model Model, whereFields uint64) (count int64, err error) {
 func (db *DB) ArgsCount(model Model, whereFields uint64, args ...interface{}) (count int64, err error) {
 	t := db.Table(model)
 
-	stmt, err := t.StmtCount(db.DB, whereFields)
+	stmt, err := t.StmtCount(db, whereFields)
 	scanner := Query(stmt, err, args...)
 
 	err = scanner.One(&count)
@@ -161,7 +163,7 @@ func (db *DB) IncrBy(model Model, field, whereFields uint64, count int) (int64, 
 }
 
 func (db *DB) ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(model).StmtIncrBy(db.DB, field, whereFields)
+	stmt, err := db.Table(model).StmtIncrBy(db, field, whereFields)
 
 	return Update(stmt, err, args...)
 }
@@ -178,18 +180,18 @@ func (db *DB) Exec(sql string, resType ResultType, args ...interface{}) (int64, 
 	return ResolveResult(res, err, resType)
 }
 
-func (db *DB) ExecById(idsql IdSql, resTyp ResultType, args ...interface{}) (int64, error) {
-	stmt, err := db.StmtById(idsql)
+func (db *DB) ExecById(sqlid uint64, resTyp ResultType, args ...interface{}) (int64, error) {
+	stmt, err := db.StmtById(sqlid)
 
 	return Exec(stmt, err, resTyp, args...)
 }
 
-func (db *DB) UpdateById(idsql IdSql, args ...interface{}) (int64, error) {
-	return db.ExecById(idsql, RES_ROWS, args...)
+func (db *DB) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
+	return db.ExecById(sqlid, RES_ROWS, args...)
 }
 
-func (db *DB) QueryById(idsql IdSql, args ...interface{}) Scanner {
-	stmt, err := db.StmtById(idsql)
+func (db *DB) QueryById(sqlid uint64, args ...interface{}) Scanner {
+	stmt, err := db.StmtById(sqlid)
 
 	return Query(stmt, err, args...)
 }
@@ -208,6 +210,6 @@ func (db *DB) Begin() (Tx, error) {
 	}, nil
 }
 
-func (db *DB) StmtById(idsql IdSql) (*sql.Stmt, error) {
-	return db.cache.StmtById(db.DB, idsql)
+func (db *DB) StmtById(sqlid uint64) (*sql.Stmt, error) {
+	return db.cache.StmtById(db, sqlid)
 }

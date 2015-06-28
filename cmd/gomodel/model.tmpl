@@ -1,9 +1,3 @@
-var (
-{{range $name, $sql := .SQLs}}
-    {{$name}} = gomodel.NewIdSql("{{$sql}}")
-{{end}}
-)
-
 {{range $model, $fields := .Models}}
 {{$normal := $model.Name}}
 {{$unexport := $model.Unexported}}
@@ -87,3 +81,11 @@ func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) bool {
     return true
 }
 {{end}}
+
+var (
+{{range $name, $sql := .SQLs}}
+    {{$name}} = gomodel.NewSqlId(func(gomodel.Tabler) string {
+        return "{{$sql}}"
+    })
+{{end}}
+)

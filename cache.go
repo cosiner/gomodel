@@ -10,6 +10,7 @@ type (
 	}
 
 	Preparer interface {
+		Tabler
 		Prepare(sql string) (*sql.Stmt, error)
 	}
 
@@ -23,14 +24,14 @@ func newCache() cache {
 // StmtById search a prepared statement for given sql type by id, if not found,
 // create with the creator, and prepared the sql to a statement, cache it, then
 // return
-func (c cache) StmtById(prepare Preparer, idsql IdSql) (*sql.Stmt, error) {
-	if item, has := c[idsql.ID]; has {
+func (c cache) StmtById(prepare Preparer, sqlid uint64) (*sql.Stmt, error) {
+	if item, has := c[sqlid]; has {
 		sqlPrinter.Print(true, item.sql)
 
 		return item.stmt, nil
 	}
 
-	sql_ := idsql.SQL
+	sql_ := sqlById(prepare, sqlid)
 	sqlPrinter.Print(false, sql_)
 
 	stmt, err := prepare.Prepare(sql_)
@@ -38,14 +39,14 @@ func (c cache) StmtById(prepare Preparer, idsql IdSql) (*sql.Stmt, error) {
 		return nil, err
 	}
 
-	c[idsql.ID] = cacheItem{sql: sql_, stmt: stmt}
+	c[sqlid] = cacheItem{sql: sql_, stmt: stmt}
 
 	return stmt, nil
 }
 
 // GetStmt get sql and statement from cacher, if not found, "" and nil was returned
-func (c cache) GetStmt(prepare Preparer, sqlId uint64) (string, *sql.Stmt, error) {
-	item, has := c[sqlId]
+func (c cache) GetStmt(prepare Preparer, sqlid uint64) (string, *sql.Stmt, error) {
+	item, has := c[sqlid]
 	if !has {
 		return "", nil, nil
 	}
@@ -59,13 +60,13 @@ func (c cache) GetStmt(prepare Preparer, sqlId uint64) (string, *sql.Stmt, error
 }
 
 // SetStmt prepare a sql to statement, cache then return it
-func (c cache) SetStmt(prepare Preparer, sqlId uint64, sql string) (*sql.Stmt, error) {
+func (c cache) SetStmt(prepare Preparer, sqlid uint64, sql string) (*sql.Stmt, error) {
 	stmt, err := prepare.Prepare(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	c[sqlId] = cacheItem{
+	c[sqlid] = cacheItem{
 		sql:  sql,
 		stmt: stmt,
 	}
@@ -73,11 +74,11 @@ func (c cache) SetStmt(prepare Preparer, sqlId uint64, sql string) (*sql.Stmt, e
 	return stmt, nil
 }
 
-func (c cache) PrepareById(prepare Preparer, idsql IdSql) (*sql.Stmt, error) {
-	item, has := c[idsql.ID]
+func (c cache) PrepareById(prepare Preparer, sqlid uint64) (*sql.Stmt, error) {
+	item, has := c[sqlid]
 	if !has {
-		item.sql = idsql.SQL
-		c[idsql.ID] = item
+		item.sql = sqlById(prepare, sqlid)
+		c[sqlid] = item
 	}
 
 	sqlPrinter.Print(has, item.sql)
@@ -86,8 +87,8 @@ func (c cache) PrepareById(prepare Preparer, idsql IdSql) (*sql.Stmt, error) {
 	return stmt, err
 }
 
-func (c cache) PrepareSQL(prepare Preparer, sqlId uint64) (string, *sql.Stmt, error) {
-	item, has := c[sqlId]
+func (c cache) PrepareSQL(prepare Preparer, sqlid uint64) (string, *sql.Stmt, error) {
+	item, has := c[sqlid]
 	if !has {
 		return "", nil, nil
 	}
@@ -96,8 +97,8 @@ func (c cache) PrepareSQL(prepare Preparer, sqlId uint64) (string, *sql.Stmt, er
 	return item.sql, stmt, err
 }
 
-func (c cache) SetSQL(sqlId uint64, sql string) {
-	c[sqlId] = cacheItem{
+func (c cache) SetSQL(sqlid uint64, sql string) {
+	c[sqlid] = cacheItem{
 		sql: sql,
 	}
 }

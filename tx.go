@@ -14,7 +14,7 @@ func (tx Tx) Insert(model Model, fields uint64, resType ResultType) (int64, erro
 }
 
 func (tx Tx) ArgsInsert(model Model, fields uint64, resType ResultType, args ...interface{}) (int64, error) {
-	stmt, err := tx.db.Table(model).PrepareInsert(tx.Tx, fields)
+	stmt, err := tx.db.Table(model).PrepareInsert(tx, fields)
 
 	return CloseExec(stmt, err, resType, args...)
 }
@@ -29,7 +29,7 @@ func (tx Tx) Update(model Model, fields, whereFields uint64) (int64, error) {
 }
 
 func (tx Tx) ArgsUpdate(model Model, fields, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := tx.db.Table(model).PrepareUpdate(tx.Tx, fields, whereFields)
+	stmt, err := tx.db.Table(model).PrepareUpdate(tx, fields, whereFields)
 
 	return CloseUpdate(stmt, err, args...)
 }
@@ -39,7 +39,7 @@ func (tx Tx) Delete(model Model, whereFields uint64) (int64, error) {
 }
 
 func (tx Tx) ArgsDelete(model Model, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := tx.db.Table(model).PrepareDelete(tx.Tx, whereFields)
+	stmt, err := tx.db.Table(model).PrepareDelete(tx, whereFields)
 
 	return CloseUpdate(stmt, err, args...)
 }
@@ -47,7 +47,7 @@ func (tx Tx) ArgsDelete(model Model, whereFields uint64, args ...interface{}) (i
 // One select one row from database
 // ArgsOne is unnecessary, just put result in model
 func (tx Tx) One(model Model, fields, whereFields uint64) error {
-	stmt, err := tx.db.Table(model).PrepareOne(tx.Tx, fields, whereFields)
+	stmt, err := tx.db.Table(model).PrepareOne(tx, fields, whereFields)
 	scanner := CloseQuery(stmt, err, FieldVals(model, whereFields)...)
 
 	return scanner.One(FieldPtrs(model, fields)...)
@@ -64,7 +64,7 @@ func (tx Tx) Limit(store Store, model Model, fields, whereFields uint64, start, 
 
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (tx Tx) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
-	stmt, err := tx.db.Table(model).PrepareLimit(tx.Tx, fields, whereFields)
+	stmt, err := tx.db.Table(model).PrepareLimit(tx, fields, whereFields)
 	scanner := CloseQuery(stmt, err, args...)
 
 	return scanner.Limit(store, args[len(args)-1].(int))
@@ -76,7 +76,7 @@ func (tx Tx) All(store Store, model Model, fields, whereFields uint64) error {
 
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (tx Tx) ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
-	stmt, err := tx.db.Table(model).PrepareAll(tx.Tx, fields, whereFields)
+	stmt, err := tx.db.Table(model).PrepareAll(tx, fields, whereFields)
 	scanner := CloseQuery(stmt, err, args...)
 
 	return scanner.All(store, tx.db.InitialModels)
@@ -90,7 +90,7 @@ func (tx Tx) Count(model Model, whereFields uint64) (count int64, err error) {
 // ArgsCount return count of rows for model use custome arguments
 func (tx Tx) ArgsCount(model Model, whereFields uint64,
 	args ...interface{}) (count int64, err error) {
-	stmt, err := tx.db.Table(model).PrepareCount(tx.Tx, whereFields)
+	stmt, err := tx.db.Table(model).PrepareCount(tx, whereFields)
 	scanner := CloseQuery(stmt, err, args...)
 
 	err = scanner.One(&count)
@@ -107,21 +107,27 @@ func (tx Tx) IncrBy(model Model, field, whereFields uint64, count int) (int64, e
 }
 
 func (tx Tx) ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := tx.db.Table(model).PrepareIncrBy(tx.Tx, field, whereFields)
+	stmt, err := tx.db.Table(model).PrepareIncrBy(tx, field, whereFields)
 
 	return CloseUpdate(stmt, err, args...)
 }
 
-// ExecUpdate execute a update operation, return resolved result
-func (tx Tx) ExecUpdate(sql string, args ...interface{}) (int64, error) {
-	return tx.Exec(sql, RES_ROWS, args...)
+// UpdateById execute a update operation, return resolved result
+func (tx Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
+	return tx.ExecById(sqlid, RES_ROWS, args...)
 }
 
-// Exec execute a update operation, return rows affected
-func (tx Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
-	res, err := tx.Tx.Exec(sql, args...)
+// ExecById execute a update operation, return rows affected
+func (tx Tx) ExecById(sqlid uint64, resType ResultType, args ...interface{}) (int64, error) {
+	stmt, err := tx.PrepareById(sqlid)
 
-	return ResolveResult(res, err, resType)
+	return CloseExec(stmt, err, resType, args...)
+}
+
+func (tx Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
+	stmt, err := tx.PrepareById(sqlid)
+
+	return CloseQuery(stmt, err, args...)
 }
 
 // Done check if error is nil then commit transaction, otherwise rollback.
@@ -165,6 +171,10 @@ func (tx Tx) DeferredDone(err *error) {
 	*err = tx.Done(*err)
 }
 
-func (tx Tx) PrepareById(idsql IdSql) (*sql.Stmt, error) {
-	return tx.db.cache.PrepareById(tx.Tx, idsql)
+func (tx Tx) PrepareById(sqlid uint64) (*sql.Stmt, error) {
+	return tx.db.cache.PrepareById(tx, sqlid)
+}
+
+func (tx Tx) Table(model Model) *Table {
+	return tx.db.Table(model)
 }
