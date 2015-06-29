@@ -18,8 +18,8 @@ type Table struct {
 }
 
 type Visitor struct {
-	Models map[string]*Table
-	SQLs   map[string]string
+	Models map[string]*Table // [modelname]modeltable
+	SQLs   map[string]string // [sqlid]sqlstring
 }
 
 func newVisitor() Visitor {
@@ -48,7 +48,6 @@ func (v Visitor) add(model, table, field, col string) {
 	t.Fields.Set(field, col)
 }
 
-// parse ast tree to find exported struct and it's fields
 func (v Visitor) parseFiles(files ...string) error {
 	for _, file := range files {
 		err := v.parseFile(file)
@@ -75,25 +74,32 @@ func (v Visitor) parseDir(dir string) error {
 }
 
 func (v Visitor) parseFile(file string) error {
-	return ast.Parser{
-		Struct: func(a *ast.Attrs) (err error) {
+	parser := ast.Parser{
+		Struct: func(a *ast.Attrs) error {
 			if !goutil.IsExported(a.TypeName) {
-				err = ast.TYPE_END
-			} else if table := a.S.Tag.Get("table"); table == "-" {
-				err = ast.TYPE_END
-			} else if col := a.S.Tag.Get("column"); col != "-" {
+				return ast.TYPE_END
+			}
+
+			var table string
+			if table = a.S.Tag.Get("table"); table == "-" {
+				return ast.TYPE_END
+			}
+
+			if col := a.S.Tag.Get("column"); col != "-" {
 				v.add(a.TypeName, table, a.S.Field, col)
 			}
 
-			return
+			return nil
 		},
+
+		ParseDoc: true,
 		Func: func(a *ast.Attrs) (err error) {
-			v.extractModelSQL(a.TypeDoc)
+			v.extractSQLs(a.TypeDoc)
 
 			return nil
 		},
-		ParseDoc: true,
-	}.ParseFile(file)
+	}
+	return parser.ParseFile(file)
 }
 
 // buildModelFields build model map from parse result
@@ -103,18 +109,21 @@ func (v Visitor) buildModelFields() map[*Model][]*Field {
 	for model, table := range v.Models {
 		m := NewModel(model, table.Name)
 		fields := table.Fields
+
 		for _, field := range fields.Elements {
-			names[m] = append(names[m], NewField(m, field.Key, field.Value.(string)))
+			names[m] = append(names[m], NewField(field.Key, field.Value.(string)))
 		}
 	}
 
 	return names
 }
 
-func (v Visitor) extractModelSQL(docs []string) {
+func (v Visitor) extractSQLs(docs []string) {
 	const (
 		INIT = iota
 		PARSING
+
+		GOMODEL = "//gomodel "
 	)
 
 	var (
@@ -126,15 +135,18 @@ func (v Visitor) extractModelSQL(docs []string) {
 	for _, d := range docs {
 		if state == PARSING {
 			d = d[len("//"):]
+
 			if strings.HasPrefix(d, "]") {
 				v.SQLs[name] = strings.Join(sqls, " ")
 				state = INIT
 			} else {
 				sqls = append(sqls, strings.TrimSpace(d))
 			}
-		} else if strings.HasPrefix(d, "//gomodel ") {
-			d = d[len("//gomodel "):]
+
+		} else if strings.HasPrefix(d, GOMODEL) {
+			d = d[len(GOMODEL):]
 			p := pair.Parse(d, "=").Trim()
+
 			if !strings.HasSuffix(p.Value, "[") {
 				v.SQLs[p.Key] = p.Value
 			} else {

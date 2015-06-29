@@ -9,16 +9,17 @@ const (
     {{end}}
     {{$unexport}}FieldEnd = iota
     {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
-    {{range $index, $field := $fields}}{{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$field.Upper}})
+    {{range $index, $field := $fields}}{{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$upper}}_{{$field.Upper}})
     {{end}}
 
-    {{range $index, $field := $fields}}{{$unexport}}Col{{$field.Name}} = "{{$field.Column}}"
+    {{range $index, $field := $fields}}{{$normal}}{{$field.Name}}Col = "{{$field.Column}}"
     {{end}}
 )
 
 var (
+    // DB is the global DB instance
     {{$unexport}}Instance = &{{$normal}}{}
-    {{$unexport}}Table = DB.Table({{$unexport}}Instance)
+    {{$normal}}Table = DB.Table({{$unexport}}Instance)
 )
 
 func {{$recv}} Table() string {
@@ -38,7 +39,7 @@ func {{$recv}} Vals(fields uint64, vals []interface{}) {
         {{end}}
     } else {
        index := 0
-    {{range $fields}} if fields&{{.Upper}} != 0 {
+    {{range $fields}} if fields&{{$upper}}_{{.Upper}} != 0 {
         vals[index] = {{$self}}.{{.Name}}
         index++
         }
@@ -53,7 +54,7 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
         {{end}}
          } else {
         index := 0
-        {{range $fields}} if fields&{{.Upper}} != 0 {
+        {{range $fields}} if fields&{{$upper}}_{{.Upper}} != 0 {
             ptrs[index] = &({{$self}}.{{.Name}})
             index++
         }
@@ -74,13 +75,13 @@ func {{$recv}} txDo(do func(gomodel.Tx, *{{$normal}}) error) (err error) {
 }
 
 type (
-    {{$unexport}}s struct {
+    {{$unexport}}Store struct {
         Values []{{$normal}}
         Fields uint64
     }
 )
 
-func (a *{{$unexport}}s) Make(count int) {
+func (a *{{$unexport}}Store) Make(count int) {
     if a.Values == nil {
         a.Values = make([]{{$normal}}, count)
     } else {
@@ -88,7 +89,7 @@ func (a *{{$unexport}}s) Make(count int) {
     }
 }
 
-func (a *{{$unexport}}s) Ptrs(index int, ptrs []interface{}) bool {
+func (a *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) bool {
     if len := len(a.Values); index == len {
         values := make([]{{$normal}}, 2 * len)
         copy(values, a.Values)

@@ -1,0 +1,7 @@
+package test
+
+import (
+    "github.com/cosiner/gomodel"
+)
+
+var DB = gomodel.NewDB()

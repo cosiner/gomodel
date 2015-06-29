@@ -9,6 +9,7 @@ import (
 
 func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 	model := modelbuf.String()
+
 	*table = v.Models[model]
 	if *table == nil {
 		return errors.Newf("model %s isn't registered", model)
@@ -19,6 +20,7 @@ func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 
 func (v Visitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
 	var table *Table
+
 	err := v.modelTable(modelbuf, &table)
 	if err == nil {
 		sqlbuf.WriteString(table.Name)
@@ -43,6 +45,9 @@ func (v Visitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fiel
 	return nil
 }
 
+// {Model} -> tablename
+// {Model:Field, Field} fieldname, fieldname
+// {Model.Field, Field} tablename.fieldname, tablename.fieldnam
 func (v Visitor) conv(sql string) (s string, err error) {
 	const (
 		INIT = iota
@@ -90,6 +95,7 @@ func (v Visitor) conv(sql string) (s string, err error) {
 			default:
 				modelbuf.WriteByte(c)
 			}
+
 		case PARSING_FIELD:
 			if c == ',' || c == '}' {
 				if err = v.writeField(table, withModel, sqlbuf, modelbuf, fieldbuf); err != nil {

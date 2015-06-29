@@ -1,0 +1,8 @@
+
+var (
+{{range $name, $sql := .SQLs}}
+    {{$name}} = gomodel.NewSqlId(func(gomodel.Tabler) string {
+        return "{{$sql}}"
+    })
+{{end}}
+)

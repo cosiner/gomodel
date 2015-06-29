@@ -31,7 +31,7 @@ type Field struct {
 	Column string
 }
 
-func NewField(model *Model, field, col string) *Field {
+func NewField(field, col string) *Field {
 	return &Field{
 		Name:   field,
 		Upper:  strings.ToUpper(field),
