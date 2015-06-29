@@ -20,8 +20,8 @@ func werckerEnv(key, defval string) string {
 	// Password: WERCKER_MYSQL_PASSWORD
 	// Database: WERCKER_MYSQL_DATABASE
 	const MYSQL = "WERCKER_MYSQL_"
-	val, has := os.LookupEnv(MYSQL + key)
-	if has {
+	val := os.Getenv(MYSQL + key)
+	if val != "" {
 		return val
 	}
 
