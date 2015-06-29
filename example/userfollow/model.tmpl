@@ -1,0 +1,110 @@
+package userfollow
+
+import (
+    "github.com/cosiner/gomodel"
+)
+
+{{range $model, $fields := .Models}}
+{{$normal := $model.Name}}
+{{$unexport := $model.Unexported}}
+{{$upper := $model.Upper}}
+{{$self := $model.Self}}
+{{$recv := (printf "(%s *%s)" $self $normal)}}
+const (
+    {{range $index, $field := $fields}}{{$upper}}_{{$field.Upper}} {{if eq $index  0}} uint64 = 1 << iota {{end}}
+    {{end}}
+    {{$unexport}}FieldEnd = iota
+    {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
+    {{range $index, $field := $fields}}{{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$upper}}_{{$field.Upper}})
+    {{end}}
+
+    {{range $index, $field := $fields}}{{$normal}}{{$field.Name}}Col = "{{$field.Column}}"
+    {{end}}
+)
+
+var (
+    // DB is the global DB instance
+    {{$unexport}}Instance = &{{$normal}}{}
+    {{$normal}}Table = DB.Table({{$unexport}}Instance)
+)
+
+func {{$recv}} Table() string {
+    return "{{$model.Table}}"
+}
+
+func {{$recv}} Vals(fields uint64, vals []interface{}) {
+    if fields != 0 {
+    if fields == {{$unexport}}FieldsAll {
+        {{range $index, $field:=$fields}}vals[{{$index}}]={{$self}}.{{$field.Name}}
+        {{end}}
+    } else {
+       index := 0
+    {{range $fields}} if fields&{{$upper}}_{{.Upper}} != 0 {
+        vals[index] = {{$self}}.{{.Name}}
+        index++
+        }
+    {{end}}  }
+    }
+}
+
+func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
+    if fields != 0 {
+        if fields == {{$unexport}}FieldsAll {
+        {{range $index, $field:=$fields}}ptrs[{{$index}}]=&({{$self}}.{{$field.Name}})
+        {{end}}
+         } else {
+        index := 0
+        {{range $fields}} if fields&{{$upper}}_{{.Upper}} != 0 {
+            ptrs[index] = &({{$self}}.{{.Name}})
+            index++
+        }
+    {{end}}}
+    }
+}
+
+func {{$recv}} txDo(do func(gomodel.Tx, *{{$normal}}) error) (err error) {
+    tx, err := DB.Begin()
+    if err != nil {
+        return
+    }
+
+    defer tx.DeferDone(&err)
+
+    err = do(tx, {{$self}})
+    return
+}
+
+type (
+    {{$unexport}}Store struct {
+        Values []{{$normal}}
+        Fields uint64
+    }
+)
+
+func (a *{{$unexport}}Store) Make(count int) {
+    if a.Values == nil {
+        a.Values = make([]{{$normal}}, count)
+    } else {
+        a.Values = a.Values[:count]
+    }
+}
+
+func (a *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) bool {
+    if len := len(a.Values); index == len {
+        values := make([]{{$normal}}, 2 * len)
+        copy(values, a.Values)
+        a.Values = values
+    }
+
+    a.Values[index].Ptrs(a.Fields, ptrs)
+    return true
+}
+{{end}}
+
+var (
+{{range $name, $sql := .SQLs}}
+    {{$name}} = gomodel.NewSqlId(func(gomodel.Tabler) string {
+        return "{{$sql}}"
+    })
+{{end}}
+)

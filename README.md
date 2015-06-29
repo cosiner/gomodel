@@ -13,6 +13,8 @@ $ gomodel -cp # copy model.tmpl to default path $HOME/.config/go/model.tmpl
 
 The [gomodel cmd tool and SQL convertion for structures](https://github.com/cosiner/gomodel/tree/master/cmd/gomodel).
 
+There is a more detailed example [User-Follow](https://github.com/cosiner/gomodel/tree/master/example/userfollow).
+
 # Example
 ```Go
 type User struct {
