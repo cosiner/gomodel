@@ -32,6 +32,12 @@ func {{$recv}} Table() string {
     return "{{$model.Table}}"
 }
 
+func {{$recv}} Columns() []string {
+    return []string{
+    {{range $index, $field:=$fields}}{{$normal}}{{$field.Name}}Col,{{end}}
+    }
+}
+
 func {{$recv}} Vals(fields uint64, vals []interface{}) {
     if fields != 0 {
     if fields == {{$unexport}}FieldsAll {

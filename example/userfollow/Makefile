@@ -9,6 +9,7 @@ model_gen.go: $(files)
 		rm $@;\
 	fi
 	gomodel -model -sql -t model.tmpl $^
+	@gofmt -w $@
 
 test:
 	@go test ./...

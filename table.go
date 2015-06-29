@@ -25,7 +25,7 @@ type (
 	Table struct {
 		Name      string
 		NumFields uint64
-		cache cache
+		cache     cache
 
 		columns        []string
 		prefix         string // Name + "."
@@ -304,10 +304,14 @@ const (
 	_FIELD_TAG = "column"
 )
 
-// parse will first use field tag as column name, the tag key is 'column',
+// parseModel will first use field tag as column name, the tag key is 'column',
 // if no tag specified, use field name's camel_case, disable a field by put 'notcol'
 // in field tag
-func parse(v Model, db *DB) *Table {
+func parseModel(v Model, db *DB) *Table {
+	if c, is := v.(Columner); is {
+		return newTable(v.Table(), c.Columns())
+	}
+
 	typ := reflect2.IndirectType(v)
 	num := typ.NumField()
 
@@ -336,14 +340,17 @@ func parse(v Model, db *DB) *Table {
 		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
 	}
 
-	cols = slices.FitCapToLenForString(cols)
+	return newTable(v.Table(), slices.FitCapToLenForString(cols))
+}
+
+func newTable(table string, cols []string) *Table {
 	return &Table{
 		NumFields: uint64(len(cols)),
-		Name:      v.Table(),
+		Name:      table,
 		cache:     newCache(),
 
 		columns:        cols,
-		prefix:         v.Table() + ".",
+		prefix:         table + ".",
 		colsCache:      make(map[uint64]Cols),
 		typedColsCache: make(map[uint64]Cols),
 	}

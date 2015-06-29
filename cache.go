@@ -14,7 +14,7 @@ type (
 		Prepare(sql string) (*sql.Stmt, error)
 	}
 
-	cache map[uint64]cacheItem // [type]map[id]{sql, stmt}
+	cache map[uint64]cacheItem // map[id]{sql, stmt}
 )
 
 func newCache() cache {

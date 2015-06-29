@@ -14,6 +14,13 @@ type (
 		// Ptrs is similar to Vals, but for field pointers
 		Ptrs(fields uint64, ptrs []interface{})
 	}
+
+	// Columner is a optional interface for Model, if Model implements this interface,
+	// it's no need to parse Model info with reflection
+	Columner interface {
+		// Columns return all column names for this Model
+		Columns() []string
+	}
 )
 
 var (

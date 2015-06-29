@@ -4,14 +4,13 @@ package gomodel
 import "database/sql"
 
 type (
-	// DB holds database connection, all typeinfos, and sql cache
+	// DB holds database connections, store all tables
 	DB struct {
-		// driver string
 		*sql.DB
 		tables map[string]*Table
 		cache  cache
 
-		// initial models count for 'All'
+		// initial models count for select 'All', default 20
 		InitialModels int
 	}
 )
@@ -24,13 +23,13 @@ func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	return db, err
 }
 
-// New create a new db structure
+// New create a new DB instance
 func NewDB() *DB {
 	initSqlStore()
 
 	return &DB{
 		tables:        make(map[string]*Table),
-		InitialModels: 10,
+		InitialModels: 20,
 	}
 }
 
@@ -51,7 +50,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 
 // register save table of model
 func (db *DB) register(model Model, table string) *Table {
-	t := parse(model, db)
+	t := parseModel(model, db)
 	db.tables[table] = t
 
 	return t
@@ -210,7 +209,7 @@ func (db *DB) Begin() (Tx, error) {
 	}, nil
 }
 
-func (db *DB) TxDo(fn func(Tx) error) (err error) {
+func (db *DB) TxDo(do func(Tx) error) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return
@@ -218,7 +217,7 @@ func (db *DB) TxDo(fn func(Tx) error) (err error) {
 
 	defer tx.DeferDone(&err)
 
-	err = fn(tx)
+	err = do(tx)
 	return
 }
 
