@@ -336,14 +336,14 @@ func parseModel(v Model, db *DB) *Table {
 		}
 	}
 
-	if len(cols) > MAX_NUMFIELDS {
-		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
-	}
-
 	return newTable(v.Table(), slices.FitCapToLenForString(cols))
 }
 
 func newTable(table string, cols []string) *Table {
+	if len(cols) > MAX_NUMFIELDS {
+		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
+	}
+
 	return &Table{
 		NumFields: uint64(len(cols)),
 		Name:      table,

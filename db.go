@@ -221,6 +221,26 @@ func (db *DB) TxDo(do func(Tx) error) (err error) {
 	return
 }
 
-func (db *DB) StmtById(sqlid uint64) (*sql.Stmt, error) {
-	return db.cache.StmtById(db, sqlid)
+type Stmt struct {
+	*sql.Stmt
+	closeable bool
+}
+
+func (s Stmt) Close() error {
+	if !s.closeable {
+		return nil
+	}
+
+	return s.Stmt.Close()
+}
+
+var errStmt = Stmt{}
+
+func (db *DB) StmtById(sqlid uint64) (Stmt, error) {
+	stmt, err := db.cache.StmtById(db, sqlid)
+	if err != nil {
+		return errStmt, err
+	}
+
+	return Stmt{Stmt: stmt, closeable: false}, nil
 }

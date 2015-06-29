@@ -2,10 +2,6 @@ package gomodel
 
 type SQLType uint64
 
-func (s SQLType) Uint64() uint64 {
-	return uint64(s)
-}
-
 const (
 	MAX_NUMFIELDS = 30
 )
