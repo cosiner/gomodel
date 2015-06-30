@@ -81,23 +81,35 @@ type (
     }
 )
 
-func (a *{{$unexport}}Store) Make(count int) {
-    if a.Values == nil {
-        a.Values = make([]{{$normal}}, count)
-    } else {
-        a.Values = a.Values[:count]
+func (a *{{$unexport}}Store) Make(size int) {
+    if len(a.Values) != 0 {
+        a.Values = a.Values[:size] // final size
+        return
     }
+
+    if c := cap(a.Values); c >= size {
+        a.Values = a.Values[:c] //  enough memory to store
+        return
+    }
+
+    a.Values = make([]{{$normal}}, size)
 }
 
 func (a *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) bool {
-    if len := len(a.Values); index == len {
-        values := make([]{{$normal}}, 2 * len)
+    if index == len(a.Values) {
+        values := make([]{{$normal}}, 2 * index)
         copy(values, a.Values)
         a.Values = values
     }
 
     a.Values[index].Ptrs(a.Fields, ptrs)
     return true
+}
+
+func (a *{{$unexport}}Store) Clear() {
+    if a.Values != nil {
+        a.Values = a.Values[:0]
+    }
 }
 {{end}}
 

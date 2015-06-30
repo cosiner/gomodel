@@ -12,12 +12,6 @@ var (
 	})
 )
 
-var (
-	conv = gomodel.NewSqlId(func(gomodel.Tabler) string {
-		return "INSERT INTO user_follow(user_id, follow_user_id) SELECT ?, ? FROM DUAL WHERE EXISTS(SELECT id FROM User WHERE id=?)"
-	})
-)
-
 const (
 	USER_ID uint64 = 1 << iota
 	USER_NAME
@@ -145,23 +139,35 @@ type (
 	}
 )
 
-func (a *userStore) Make(count int) {
-	if a.Values == nil {
-		a.Values = make([]User, count)
-	} else {
-		a.Values = a.Values[:count]
+func (a *userStore) Make(size int) {
+	if len(a.Values) != 0 {
+		a.Values = a.Values[:size] // final size
+		return
 	}
+
+	if c := cap(a.Values); c >= size {
+		a.Values = a.Values[:c] //  enough memory to store
+		return
+	}
+
+	a.Values = make([]User, size)
 }
 
 func (a *userStore) Ptrs(index int, ptrs []interface{}) bool {
-	if len := len(a.Values); index == len {
-		values := make([]User, 2*len)
+	if index == len(a.Values) {
+		values := make([]User, 2*index)
 		copy(values, a.Values)
 		a.Values = values
 	}
 
 	a.Values[index].Ptrs(a.Fields, ptrs)
 	return true
+}
+
+func (a *userStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
+	}
 }
 
 const (
@@ -252,23 +258,35 @@ type (
 	}
 )
 
-func (a *followStore) Make(count int) {
-	if a.Values == nil {
-		a.Values = make([]Follow, count)
-	} else {
-		a.Values = a.Values[:count]
+func (a *followStore) Make(size int) {
+	if len(a.Values) != 0 {
+		a.Values = a.Values[:size] // final size
+		return
 	}
+
+	if c := cap(a.Values); c >= size {
+		a.Values = a.Values[:c] //  enough memory to store
+		return
+	}
+
+	a.Values = make([]Follow, size)
 }
 
 func (a *followStore) Ptrs(index int, ptrs []interface{}) bool {
-	if len := len(a.Values); index == len {
-		values := make([]Follow, 2*len)
+	if index == len(a.Values) {
+		values := make([]Follow, 2*index)
 		copy(values, a.Values)
 		a.Values = values
 	}
 
 	a.Values[index].Ptrs(a.Fields, ptrs)
 	return true
+}
+
+func (a *followStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
+	}
 }
 
 var ()
