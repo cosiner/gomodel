@@ -1,7 +1,6 @@
 package gomodel
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -40,7 +39,7 @@ func FieldsIdentity(sqlType SQLType, numField, fields, whereFields uint64) uint6
 }
 
 // Stmt get sql from cache container, if cache not exist, then create new
-func (t *Table) Stmt(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (*sql.Stmt, error) {
+func (t *Table) Stmt(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (Stmt, error) {
 	id := FieldsIdentity(sqlType, t.NumFields, fields, whereFields)
 
 	sql_, stmt, err := t.cache.GetStmt(prepare, id)
@@ -57,43 +56,43 @@ func (t *Table) Stmt(prepare Preparer, sqlType SQLType, fields, whereFields uint
 
 	sqlPrinter.Print(true, sql_)
 
-	return stmt, nil
+	return WrapStmt(STMT_NOPCLOSE, stmt, nil)
 }
 
-func (t *Table) StmtInsert(prepare Preparer, fields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtInsert(prepare Preparer, fields uint64) (Stmt, error) {
 	return t.Stmt(prepare, INSERT, fields, 0, t.SQLInsert)
 }
 
-func (t *Table) StmtUpdate(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtUpdate(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, UPDATE, fields, whereFields, t.SQLUpdate)
 }
 
-func (t *Table) StmtDelete(prepare Preparer, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtDelete(prepare Preparer, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, DELETE, 0, whereFields, t.SQLDelete)
 }
 
-func (t *Table) StmtLimit(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtLimit(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, LIMIT, fields, whereFields, t.SQLLimit)
 }
 
-func (t *Table) StmtOne(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtOne(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, ONE, fields, whereFields, t.SQLOne)
 }
 
-func (t *Table) StmtAll(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtAll(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, ALL, fields, whereFields, t.SQLAll)
 }
 
-func (t *Table) StmtCount(prepare Preparer, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtCount(prepare Preparer, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, LIMIT, 0, whereFields, t.SQLCount)
 }
 
-func (t *Table) StmtIncrBy(prepare Preparer, field, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) StmtIncrBy(prepare Preparer, field, whereFields uint64) (Stmt, error) {
 	return t.Stmt(prepare, INCRBY, field, whereFields, t.SQLIncrBy)
 }
 
 // Stmt get sql from cache container, if cache not exist, then create new
-func (t *Table) Prepare(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (*sql.Stmt, error) {
+func (t *Table) Prepare(prepare Preparer, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (Stmt, error) {
 	id := FieldsIdentity(sqlType, t.NumFields, fields, whereFields)
 
 	sql_, stmt, err := t.cache.PrepareSQL(prepare, id)
@@ -111,38 +110,38 @@ func (t *Table) Prepare(prepare Preparer, sqlType SQLType, fields, whereFields u
 		sqlPrinter.Print(true, sql_)
 	}
 
-	return stmt, err
+	return WrapStmt(STMT_CLOSEABLE, stmt, err)
 }
 
-func (t *Table) PrepareInsert(prepare Preparer, fields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareInsert(prepare Preparer, fields uint64) (Stmt, error) {
 	return t.Prepare(prepare, INSERT, fields, 0, t.SQLInsert)
 }
 
-func (t *Table) PrepareUpdate(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareUpdate(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, UPDATE, fields, whereFields, t.SQLUpdate)
 }
 
-func (t *Table) PrepareDelete(prepare Preparer, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareDelete(prepare Preparer, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, DELETE, 0, whereFields, t.SQLDelete)
 }
 
-func (t *Table) PrepareLimit(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareLimit(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, LIMIT, fields, whereFields, t.SQLLimit)
 }
 
-func (t *Table) PrepareOne(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareOne(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, ONE, fields, whereFields, t.SQLOne)
 }
 
-func (t *Table) PrepareAll(prepare Preparer, fields, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareAll(prepare Preparer, fields, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, ALL, fields, whereFields, t.SQLAll)
 }
 
-func (t *Table) PrepareCount(prepare Preparer, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareCount(prepare Preparer, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, LIMIT, 0, whereFields, t.SQLCount)
 }
 
-func (t *Table) PrepareIncrBy(prepare Preparer, field, whereFields uint64) (*sql.Stmt, error) {
+func (t *Table) PrepareIncrBy(prepare Preparer, field, whereFields uint64) (Stmt, error) {
 	return t.Prepare(prepare, INCRBY, field, whereFields, t.SQLIncrBy)
 }
 

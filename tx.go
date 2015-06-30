@@ -168,8 +168,10 @@ func (tx Tx) DeferDone(err *error) {
 	*err = tx.Done(*err)
 }
 
-func (tx Tx) PrepareById(sqlid uint64) (*sql.Stmt, error) {
-	return tx.db.cache.PrepareById(tx, sqlid)
+func (tx Tx) PrepareById(sqlid uint64) (Stmt, error) {
+	stmt, err := tx.db.cache.PrepareById(tx, sqlid)
+
+	return WrapStmt(STMT_CLOSEABLE, stmt, err)
 }
 
 func (tx Tx) Table(model Model) *Table {
