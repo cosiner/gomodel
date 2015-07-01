@@ -41,7 +41,7 @@ func (v Visitor) add(model, table, field, col string) {
 
 	t, has := v.Models[model]
 	if !has {
-		t = &Table{Name: table}
+		t = &Table{Name: table, Fields: sortedmap.New()}
 		v.Models[model] = t
 	}
 
