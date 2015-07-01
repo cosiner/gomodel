@@ -16,85 +16,112 @@ const (
 	NonError    = errors.Err("non error")
 )
 
-func duplicateKey(err error) string {
+type KeyParser func(err error) (key string)
+
+var duplicateKey = func(err error) string {
 	if err == nil {
 		return ""
 	}
 
 	// Duplicate entry ... for key 'keyname'
-	const duplicate = "Duplicate"
-	const forKey = "for key"
+	const DUPLICATE = "Duplicate"
+	const FORKEY = "for key"
 
 	s := err.Error()
-	index := strings.Index(s, duplicate)
-	if index >= 0 {
-		s = s[index+len(duplicate):]
-		if index = strings.Index(s, forKey) + len(forKey); index >= 0 {
-			s, _ = strings2.TrimQuote(s[index:])
-			return s
-		}
+	index := strings.Index(s, DUPLICATE)
+	if index < 0 {
+		return ""
 	}
 
-	return ""
-}
-
-func DuplicateKeyFunc(err error, keyfunc func(key string) error) error {
-	if key := duplicateKey(err); key != "" {
-		if e := keyfunc(key); e != nil {
-			err = e
-		} else if e == NonError {
-			err = nil
-		}
-	}
-	return err
-}
-
-func DuplicateKeyError(err error, key string, newErr error) error {
-	if k := duplicateKey(err); k != "" {
-		if k == key {
-			return newErr
-		}
-
-		panic("unexpected duplicate key: " + k + ", expect: " + key)
+	s = s[index+len(DUPLICATE):]
+	index = strings.Index(s, FORKEY) + len(FORKEY)
+	if index < 0 {
+		return ""
 	}
 
-	return err
+	s, _ = strings2.TrimQuote(s[index:])
+	return s
 }
 
-func foreignKey(err error) string {
+var foreignKey = func(err error) string {
 	if err == nil {
 		return ""
 	}
 
 	// FOREIGN KEY (`keyname`)
-	const foreign = "FOREIGN KEY "
+	const FOREIGNKEY = "FOREIGN KEY "
 
 	s := err.Error()
-	index := strings.Index(s, foreign)
-	if index > 0 {
-		index += len(foreign) + 2
-		s = s[index:]
-		return s[:strings.IndexByte(s, ')')-1]
+	index := strings.Index(s, FOREIGNKEY)
+	if index < 0 {
+		return ""
 	}
 
-	return ""
+	index += len(FOREIGNKEY) + 2
+	s = s[index:]
+	return s[:strings.IndexByte(s, ')')-1]
 }
 
-func ForeignKey(err error, keyfunc func(key string) error) error {
-	if key := foreignKey(err); key != "" {
-		if e := keyfunc(key); e != nil {
-			err = e
-		} else if e == NonError {
-			err = nil
-		}
+// SetupKeyParsers change the default key parser if new parser is non-nill
+func SetupKeyParsers(duplicate, foreign KeyParser) {
+	if duplicate != nil {
+		duplicateKey = duplicate
 	}
+
+	if foreign != nil {
+		foreignKey = foreign
+	}
+}
+
+func parseKeyFunc(err error, keyfunc func(key string) error, getKey KeyParser) error {
+	key := getKey(err)
+	if key == "" {
+		return err
+	}
+
+	if e := keyfunc(key); e == NonError {
+		err = nil
+	} else if e != nil {
+		err = e
+	}
+
 	return err
+}
+
+func parseKeyError(err error, key string, newErr error, getKey KeyParser) error {
+	k := getKey(err)
+	if k == "" {
+		return err
+	}
+
+	if k == key {
+		return newErr
+	}
+
+	panic("unexpected key: " + k + ", expect: " + key)
+}
+
+func DuplicateKeyFunc(err error, keyfunc func(key string) error) error {
+	return parseKeyFunc(err, keyfunc, duplicateKey)
+}
+
+func DuplicateKeyError(err error, key string, newErr error) error {
+	return parseKeyError(err, key, newErr, duplicateKey)
+}
+
+func ForeignKeyFunc(err error, keyfunc func(key string) error) error {
+	return parseKeyFunc(err, keyfunc, foreignKey)
+}
+
+func ForeignKeyError(err error, key string, newErr error) error {
+	return parseKeyError(err, key, newErr, foreignKey)
 }
 
 func NoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
-	} else if err == NonError {
+	}
+	if err == NonError {
 		return nil
 	}
 
@@ -104,7 +131,8 @@ func NoRows(err, newErr error) error {
 func NoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
-	} else if err == NonError {
+	}
+	if err == NonError {
 		return nil
 	}
 
