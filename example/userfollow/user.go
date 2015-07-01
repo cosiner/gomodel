@@ -1,7 +1,7 @@
 package userfollow
 
 import (
-	"github.com/cosiner/gohper/errors/httperrs"
+	"github.com/cosiner/gohper/utils/httperrs"
 	"github.com/cosiner/gomodel"
 	"github.com/cosiner/gomodel/dberrs"
 )

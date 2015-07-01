@@ -1,6 +1,6 @@
 package gomodel
 
-import "github.com/cosiner/gohper/bitset"
+import "github.com/cosiner/gohper/ds/bitset"
 
 type (
 	// Model represent a database model mapping to a table

@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cosiner/gohper/ds/sortedmap"
 	"github.com/cosiner/gohper/goutil"
-	"github.com/cosiner/gohper/goutil/ast"
-	"github.com/cosiner/gohper/pair"
-	"github.com/cosiner/gohper/sortedmap"
 	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gohper/utils/ast"
+	"github.com/cosiner/gohper/utils/pair"
 )
 
 type Table struct {
@@ -110,7 +110,7 @@ func (v Visitor) buildModelFields() map[*Model][]*Field {
 		m := NewModel(model, table.Name)
 		fields := table.Fields
 
-		for _, field := range fields.Elements {
+		for _, field := range fields.Values {
 			names[m] = append(names[m], NewField(field.Key, field.Value.(string)))
 		}
 	}

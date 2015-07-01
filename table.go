@@ -335,7 +335,7 @@ func parseModel(v Model, db *DB) *Table {
 		}
 	}
 
-	return newTable(v.Table(), slices.FitCapToLenForString(cols))
+	return newTable(v.Table(), slices.FitCapToLenString(cols))
 }
 
 func newTable(table string, cols []string) *Table {
