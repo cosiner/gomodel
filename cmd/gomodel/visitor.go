@@ -13,8 +13,11 @@ import (
 )
 
 type Table struct {
-	Name   string
-	Fields sortedmap.Map
+	Name    string
+	Nocache string
+	Fields  sortedmap.Map
+
+	initialed bool
 }
 
 type Visitor struct {
@@ -41,11 +44,24 @@ func (v Visitor) add(model, table, field, col string) {
 
 	t, has := v.Models[model]
 	if !has {
-		t = &Table{Name: table, Fields: sortedmap.New()}
+		t = &Table{Name: table, Fields: sortedmap.New(), initialed: true}
 		v.Models[model] = t
+	} else if t.Fields.Indexes == nil {
+		t.Name = table
+		t.Fields = sortedmap.New()
 	}
 
 	t.Fields.Set(field, col)
+}
+
+func (v Visitor) addNocahe(model, nocache string) {
+	t, has := v.Models[model]
+	if !has {
+		t = &Table{}
+		v.Models[model] = t
+	}
+
+	t.Nocache = nocache
 }
 
 func (v Visitor) parseFiles(files ...string) error {
@@ -85,6 +101,10 @@ func (v Visitor) parseFile(file string) error {
 				return ast.TYPE_END
 			}
 
+			if nocache := a.S.Tag.Get("nocache"); nocache != "" {
+				v.addNocahe(a.TypeName, nocache)
+			}
+
 			if col := a.S.Tag.Get("column"); col != "-" {
 				v.add(a.TypeName, table, a.S.Field, col)
 			}
@@ -107,7 +127,7 @@ func (v Visitor) buildModelFields() map[*Model][]*Field {
 	names := make(map[*Model][]*Field, len(v.Models))
 
 	for model, table := range v.Models {
-		m := NewModel(model, table.Name)
+		m := NewModel(model, table.Name, table.Nocache)
 		fields := table.Fields
 
 		for _, field := range fields.Values {

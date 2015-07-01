@@ -21,6 +21,13 @@ type (
 		// Columns return all column names for this Model
 		Columns() []string
 	}
+
+	// Nocacher is a optional interface for Model, if Model implements this interface,
+	// and NoCache method return true, it will not allocate memory to store
+	// sql, stmt, columns for this Model, all sqls, stmts must be stored in DB instance
+	Nocacher interface {
+		Nocache() bool
+	}
 )
 
 var (

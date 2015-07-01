@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/cosiner/gohper/goutil"
 	"github.com/cosiner/gohper/reflect2"
 	"github.com/cosiner/gohper/slices"
 	"github.com/cosiner/gohper/strings2"
@@ -298,32 +297,36 @@ func (t *Table) cols(fields uint64, prefix string) Cols {
 	return _emptyCols
 }
 
-const (
-	// _FIELD_TAG is tag name of database column
-	_FIELD_TAG = "column"
-)
-
 // parseModel will first use field tag as column name, the tag key is 'column',
-// if no tag specified, use field name's camel_case, disable a field by put 'notcol'
+// if no tag specified, use field name's camel_case, disable a field by put '-'
 // in field tag
 func parseModel(v Model, db *DB) *Table {
+	var nocache bool
+	if nc, is := v.(Nocacher); is {
+		nocache = nc.Nocache()
+	}
+
 	if c, is := v.(Columner); is {
-		return newTable(v.Table(), c.Columns())
+		return newTable(v.Table(), c.Columns(), nocache)
 	}
 
 	typ := reflect2.IndirectType(v)
 	num := typ.NumField()
 
 	cols := make([]string, 0)
+
 	for i := 0; i < num; i++ {
 		field := typ.Field(i)
 		col := field.Name
-		// Exported + !(anonymous && structure)
-		if goutil.IsExported(col) &&
-			!(field.Anonymous &&
-				field.Type.Kind() == reflect.Struct) {
 
-			tagName := field.Tag.Get(_FIELD_TAG)
+		b, err := strconv.ParseBool(field.Tag.Get("nocache"))
+		if err == nil {
+			nocache = b
+		}
+
+		// Exported + !(anonymous && structure)
+		if !(field.Anonymous && field.Type.Kind() == reflect.Struct) {
+			tagName := field.Tag.Get("column")
 			if tagName == "-" {
 				continue
 			}
@@ -335,22 +338,27 @@ func parseModel(v Model, db *DB) *Table {
 		}
 	}
 
-	return newTable(v.Table(), slices.FitCapToLenString(cols))
+	return newTable(v.Table(), slices.FitCapToLenString(cols), nocache)
 }
 
-func newTable(table string, cols []string) *Table {
+func newTable(table string, cols []string, nocache bool) *Table {
 	if len(cols) > MAX_NUMFIELDS {
 		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
 	}
 
-	return &Table{
+	t := &Table{
 		NumFields: uint64(len(cols)),
 		Name:      table,
-		cache:     newCache(),
 
-		columns:        cols,
-		prefix:         table + ".",
-		colsCache:      make(map[uint64]Cols),
-		typedColsCache: make(map[uint64]Cols),
+		columns: cols,
+		prefix:  table + ".",
 	}
+
+	if !nocache {
+		t.cache = newCache()
+		t.colsCache = make(map[uint64]Cols)
+		t.typedColsCache = make(map[uint64]Cols)
+	}
+
+	return t
 }

@@ -13,15 +13,17 @@ type Model struct {
 	Unexported string
 	Upper      string
 	Table      string
+	Nocache    string
 }
 
-func NewModel(name, table string) *Model {
+func NewModel(name, table, nocache string) *Model {
 	return &Model{
 		Name:       name,
 		Self:       strings2.ToLowerAbridge(name),
 		Unexported: goutil.ToUnexported(name),
 		Upper:      strings.ToUpper(name),
 		Table:      table,
+		Nocache:    nocache,
 	}
 }
 

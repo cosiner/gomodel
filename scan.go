@@ -5,13 +5,23 @@ import "database/sql"
 type (
 	// Store defines the interface to store data from databqase rows
 	Store interface {
-		// Make will be called twice, first to allocate initial data space, second to specified
+		// Init will be called twice, first to allocate initial data space, second to specified
 		// the final row count
-		Make(size int)
-		// If index is greater than initial size of 'Make'(only occured in
-		// Scanner.All), Store should allocate new space,
-		// return false if want to stop scanning
-		Ptrs(index int, ptrs []interface{}) bool
+		// Init initial the data store with size rows, if size is not enough,
+		// Realloc will be called
+		Init(size int)
+
+		// Final indicate the last found rows
+		Final(size int)
+
+		// Ptrs should store pointers of data store at given index to the ptr parameter
+		Ptrs(index int, ptrs []interface{})
+
+		// Realloc will occurred if the initial size is not enough, only occured
+		// when call the All method of Scanner.
+		// The return value shold be the new size of Store.
+		// If don't want to continue, just return a non-positive number.
+		Realloc(currSize int) int
 	}
 
 	// Scanner scan database rows to data Store when Error is nil, if the Rows is
@@ -54,13 +64,17 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 	for rows.Next() && (index < count || scanType == _SCAN_ALL) {
 		if index == 0 {
 			cols, _ := rows.Columns()
-			s.Make(count)
+			s.Init(count)
 			ptrs = make([]interface{}, len(cols))
 		}
 
-		if !s.Ptrs(index, ptrs) {
-			break
+		if index == count {
+			if count = s.Realloc(count); count <= 0 {
+				break // don't continue
+			}
 		}
+
+		s.Ptrs(index, ptrs)
 
 		if err = rows.Scan(ptrs...); err != nil {
 			return err
@@ -71,7 +85,7 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 	if index == 0 {
 		err = sql.ErrNoRows
 	} else {
-		s.Make(index)
+		s.Final(index)
 	}
 
 	return err
@@ -117,59 +131,115 @@ type (
 	}
 )
 
-func (s *StringStore) Make(size int) {
-	if s.Values == nil {
+func (s *StringStore) Init(size int) {
+	if cap(s.Values) < size {
 		s.Values = make([]string, size)
 	} else {
 		s.Values = s.Values[:size]
 	}
 }
 
-func (s *StringStore) Ptrs(index int, ptrs []interface{}) bool {
-	if len := len(s.Values); index == len {
-		values := make([]string, 2*len)
-		copy(values, s.Values)
-		s.Values = values
-	}
-
-	ptrs[0] = &s.Values[index]
-	return true
+func (s *StringStore) Final(size int) {
+	s.Values = s.Values[:size]
 }
 
-func (s *IntStore) Make(size int) {
-	if s.Values == nil {
+func (s *StringStore) Ptrs(index int, ptrs []interface{}) {
+	ptrs[0] = &s.Values[index]
+}
+
+func (s *StringStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]string, 2*c)
+		copy(values, s.Values)
+		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
+	}
+
+	panic("unexpected capacity of StringStore")
+}
+
+func (s *StringStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
+	}
+}
+
+func (s *IntStore) Init(size int) {
+	if cap(s.Values) < size {
 		s.Values = make([]int, size)
 	} else {
 		s.Values = s.Values[:size]
 	}
 }
 
-func (s *IntStore) Ptrs(index int, ptrs []interface{}) bool {
-	if len := len(s.Values); index == len {
-		values := make([]int, 2*len)
-		copy(values, s.Values)
-		s.Values = values
-	}
-
-	ptrs[0] = &s.Values[index]
-	return true
+func (s *IntStore) Final(size int) {
+	s.Values = s.Values[:size]
 }
 
-func (s *BoolStore) Make(size int) {
-	if s.Values == nil {
+func (s *IntStore) Ptrs(index int, ptrs []interface{}) {
+	ptrs[0] = &s.Values[index]
+}
+
+func (s *IntStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]int, 2*c)
+		copy(values, s.Values)
+		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
+	}
+
+	panic("unexpected capacity of IntStore")
+}
+
+func (s *IntStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
+	}
+}
+func (s *BoolStore) Init(size int) {
+	if cap(s.Values) < size {
 		s.Values = make([]bool, size)
 	} else {
 		s.Values = s.Values[:size]
 	}
 }
 
-func (s *BoolStore) Ptrs(index int, ptrs []interface{}) bool {
-	if len := len(s.Values); index == len {
-		values := make([]bool, 2*len)
+func (s *BoolStore) Final(size int) {
+	s.Values = s.Values[:size]
+}
+
+func (s *BoolStore) Ptrs(index int, ptrs []interface{}) {
+	ptrs[0] = &s.Values[index]
+}
+
+func (s *BoolStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]bool, 2*c)
 		copy(values, s.Values)
 		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
 	}
 
-	ptrs[0] = &s.Values[index]
-	return true
+	panic("unexpected capacity of BoolStore")
+}
+
+func (s *BoolStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
+	}
 }

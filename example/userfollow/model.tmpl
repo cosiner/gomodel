@@ -38,6 +38,12 @@ func {{$recv}} Columns() []string {
     }
 }
 
+{{if $model.Nocache}}
+func {{$recv}} Nocache() bool {
+    return {{$model.Nocache}}
+}
+{{end}}
+
 func {{$recv}} Vals(fields uint64, vals []interface{}) {
     if fields != 0 {
     if fields == {{$unexport}}FieldsAll {
@@ -87,34 +93,41 @@ type (
     }
 )
 
-func (a *{{$unexport}}Store) Make(size int) {
-    if len(a.Values) != 0 {
-        a.Values = a.Values[:size] // final size
-        return
+func (s *{{$unexport}}Store) Init(size int) {
+    if cap(s.Values) < size {
+        s.Values = make([]{{$normal}}, size)
+    } else {
+        s.Values = s.Values[:size]
     }
-
-    if c := cap(a.Values); c >= size {
-        a.Values = a.Values[:c] // enough memory to store
-        return
-    }
-
-    a.Values = make([]{{$normal}}, size)
 }
 
-func (a *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) bool {
-    if index == len(a.Values) {
-        values := make([]{{$normal}}, 2 * index)
-        copy(values, a.Values)
-        a.Values = values
-    }
-
-    a.Values[index].Ptrs(a.Fields, ptrs)
-    return true
+func (s *{{$unexport}}Store) Final(size int) {
+    s.Values = s.Values[:size]
 }
 
-func (a *{{$unexport}}Store) Clear() {
-    if a.Values != nil {
-        a.Values = a.Values[:0]
+func (s *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) {
+    s.Values[index].Ptrs(s.Fields, ptrs)
+}
+
+func (s *{{$unexport}}Store) Realloc(count int) int {
+    if c := cap(s.Values); c == count {
+        values := make([]{{$normal}}, 2*c)
+        copy(values, s.Values)
+        s.Values = values
+
+        return 2 * c
+    } else if c > count {
+        s.Values = s.Values[:c]
+
+        return c
+    }
+
+    panic("unexpected capacity of {{$unexport}}Store")
+}
+
+func (s *{{$unexport}}Store) Clear() {
+    if s.Values != nil {
+        s.Values = s.Values[:0]
     }
 }
 {{end}}
