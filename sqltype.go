@@ -7,7 +7,7 @@ const (
 )
 
 const (
-	// These are five predefined sql types
+	// These are several predefined sql types
 	INSERT SQLType = iota + 1<<(MAX_NUMFIELDS*2)
 	DELETE
 	UPDATE

@@ -8,6 +8,7 @@ var (
 	InitialSQLCount uint64 = 256
 )
 
+// Tabler is the storage of model tables
 type Tabler interface {
 	Table(model Model) *Table
 }
@@ -29,6 +30,7 @@ func sqlById(tabler Tabler, id uint64) string {
 	return store.sqls[id](tabler)
 }
 
+// NewSqlId create an id for this sql creator used in methods like XXXById
 func NewSqlId(create func(Tabler) string) (id uint64) {
 	store.Lock()
 

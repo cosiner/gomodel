@@ -1,6 +1,8 @@
 package gomodel
 
-import "github.com/cosiner/gohper/ds/bitset"
+import (
+	"github.com/cosiner/gohper/ds/bitset"
+)
 
 type (
 	// Model represent a database model mapping to a table
@@ -24,7 +26,10 @@ type (
 
 	// Nocacher is a optional interface for Model, if Model implements this interface,
 	// and NoCache method return true, it will not allocate memory to store
-	// sql, stmt, columns for this Model, all sqls, stmts must be stored in DB instance
+	// sql, stmt, columns for this Model, all sqls, stmts must be stored in DB instance.
+	//
+	// If Nocache, the only methods to get Stmt are DB.StmtById and Tx.PrepareById,
+	// implements it only when you actually know what are you do.
 	Nocacher interface {
 		Nocache() bool
 	}
@@ -54,7 +59,8 @@ func FieldVals(model Model, fields uint64, args ...interface{}) []interface{} {
 	return vals
 }
 
-// FieldPtrs is similar to FieldVals, but for field pointers
+// FieldPtrs is similar to FieldVals, but for field pointers.
+// FieldPtrs only used for query operations such as One, Limit, All.
 func FieldPtrs(model Model, fields uint64, args ...interface{}) []interface{} {
 	c, l := NumFields(fields), len(args)
 	ptrs := make([]interface{}, c+l)

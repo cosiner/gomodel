@@ -25,10 +25,9 @@ type (
 		NumFields uint64
 		cache     cache
 
-		columns        []string
-		prefix         string // Name + "."
-		colsCache      map[uint64]Cols
-		typedColsCache map[uint64]Cols
+		columns   []string
+		prefix    string // Name + "."
+		colsCache map[uint64]Cols
 	}
 )
 
@@ -234,14 +233,19 @@ func (t *Table) TabWhere(fields uint64) string {
 	return "WHERE " + cols.Join("=?", " AND ")
 }
 
+const (
+	_COLS = iota + 1<<(2*MAX_NUMFIELDS)
+	_TAB_COLS
+)
+
 // Cols return column names for given fields
 // if fields is only one, return single column
 // else return column slice
 func (t *Table) Cols(fields uint64) Cols {
-	cols := t.colsCache[fields]
+	cols := t.colsCache[_COLS|fields]
 	if cols == nil {
 		cols = t.cols(fields, "")
-		t.colsCache[fields] = cols
+		t.colsCache[_COLS|fields] = cols
 	}
 
 	return cols
@@ -255,10 +259,10 @@ func (t *Table) Col(field uint64) string {
 // TabCols return column names for given fields with type's table name as prefix
 // like table.column
 func (t *Table) TabCols(fields uint64) Cols {
-	cols := t.typedColsCache[fields]
+	cols := t.colsCache[_TAB_COLS|fields]
 	if cols == nil {
 		cols = t.cols(fields, t.prefix)
-		t.typedColsCache[fields] = cols
+		t.colsCache[_TAB_COLS|fields] = cols
 	}
 
 	return cols
@@ -298,8 +302,8 @@ func (t *Table) cols(fields uint64, prefix string) Cols {
 }
 
 // parseModel will first use field tag as column name, the tag key is 'column',
-// if no tag specified, use field name's camel_case, disable a field by put '-'
-// in field tag
+// if no tag specified, use field name's camel_case, disable a field or model
+// by set '-' as field tag value
 func parseModel(v Model, db *DB) *Table {
 	var nocache bool
 	if nc, is := v.(Nocacher); is {
@@ -317,30 +321,40 @@ func parseModel(v Model, db *DB) *Table {
 
 	for i := 0; i < num; i++ {
 		field := typ.Field(i)
-		col := field.Name
+		col := strings2.ToSnake(field.Name)
 
 		b, err := strconv.ParseBool(field.Tag.Get("nocache"))
 		if err == nil {
 			nocache = b
 		}
+		if nocache {
+			break
+		}
 
-		// Exported + !(anonymous && structure)
-		if !(field.Anonymous && field.Type.Kind() == reflect.Struct) {
-			tagName := field.Tag.Get("column")
-			if tagName == "-" {
+		if !field.Anonymous ||
+			field.Type.Kind() != reflect.Struct {
+
+			colTag := field.Tag.Get("column")
+			if colTag == "-" {
 				continue
 			}
-			if tagName != "" {
-				col = tagName
+			if colTag != "" {
+				col = colTag
 			}
 
-			cols = append(cols, strings2.ToSnake(col))
+			cols = append(cols, col)
 		}
 	}
 
-	return newTable(v.Table(), slices.FitCapToLenString(cols), nocache)
+	return newTable(
+		v.Table(),
+		slices.FitCapToLenString(cols),
+		nocache,
+	)
 }
 
+// newTable create Table for a Model with the table name and columns, if nocache,
+// it will not allocate cache memory
 func newTable(table string, cols []string, nocache bool) *Table {
 	if len(cols) > MAX_NUMFIELDS {
 		panic(fmt.Sprint("can't register model with fields count over ", MAX_NUMFIELDS))
@@ -349,15 +363,13 @@ func newTable(table string, cols []string, nocache bool) *Table {
 	t := &Table{
 		NumFields: uint64(len(cols)),
 		Name:      table,
-
-		columns: cols,
-		prefix:  table + ".",
 	}
 
 	if !nocache {
+		t.prefix = table + "."
+		t.columns = cols
 		t.cache = newCache()
 		t.colsCache = make(map[uint64]Cols)
-		t.typedColsCache = make(map[uint64]Cols)
 	}
 
 	return t
