@@ -121,9 +121,6 @@ func NoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
 	}
-	if err == NonError {
-		return nil
-	}
 
 	return err
 }
@@ -131,9 +128,6 @@ func NoRows(err, newErr error) error {
 func NoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
-	}
-	if err == NonError {
-		return nil
 	}
 
 	return err

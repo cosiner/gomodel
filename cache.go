@@ -3,15 +3,15 @@ package gomodel
 import "database/sql"
 
 type (
+	Preparer interface {
+		Tabler
+		Prepare(sql string) (*sql.Stmt, error)
+	}
+
 	// cacheItem keeps the sql and prepared statement of it
 	cacheItem struct {
 		sql  string
 		stmt *sql.Stmt
-	}
-
-	Preparer interface {
-		Tabler
-		Prepare(sql string) (*sql.Stmt, error)
 	}
 
 	cache map[uint64]cacheItem // map[id]{sql, stmt}

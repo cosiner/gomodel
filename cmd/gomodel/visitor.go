@@ -101,14 +101,15 @@ func (v Visitor) parseFile(file string) error {
 				return ast.TYPE_END
 			}
 
-			if nocache := a.S.Tag.Get("nocache"); nocache != "" {
-				v.addNocahe(a.TypeName, nocache)
-			}
+			if !a.S.Anonymous {
+				if nocache := a.S.Tag.Get("nocache"); nocache != "" {
+					v.addNocahe(a.TypeName, nocache)
+				}
 
-			if col := a.S.Tag.Get("column"); col != "-" {
-				v.add(a.TypeName, table, a.S.Field, col)
+				if col := a.S.Tag.Get("column"); col != "-" {
+					v.add(a.TypeName, table, a.S.Field, col)
+				}
 			}
-
 			return nil
 		},
 
