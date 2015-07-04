@@ -233,22 +233,11 @@ func (t *Table) TabWhere(fields uint64) string {
 	return "WHERE " + cols.Join("=?", " AND ")
 }
 
-const (
-	_COLS = iota + 1<<(2*MAX_NUMFIELDS)
-	_TAB_COLS
-)
-
 // Cols return column names for given fields
 // if fields is only one, return single column
 // else return column slice
 func (t *Table) Cols(fields uint64) Cols {
-	cols := t.colsCache[_COLS|fields]
-	if cols == nil {
-		cols = t.cols(fields, "")
-		t.colsCache[_COLS|fields] = cols
-	}
-
-	return cols
+	return t.colsByType(_COLS, fields)
 }
 
 // Col return column name of field
@@ -259,18 +248,27 @@ func (t *Table) Col(field uint64) string {
 // TabCols return column names for given fields with type's table name as prefix
 // like table.column
 func (t *Table) TabCols(fields uint64) Cols {
-	cols := t.colsCache[_TAB_COLS|fields]
-	if cols == nil {
-		cols = t.cols(fields, t.prefix)
-		t.colsCache[_TAB_COLS|fields] = cols
-	}
-
-	return cols
+	return t.colsByType(_TAB_COLS, fields)
 }
 
 // Col return column name of field
 func (t *Table) TabCol(field uint64) string {
 	return t.TabCols(field).String()
+}
+
+const (
+	_COLS = iota + 1<<(2*MAX_NUMFIELDS)
+	_TAB_COLS
+)
+
+func (t *Table) colsByType(typ, fields uint64) Cols {
+	cols := t.colsCache[typ|fields]
+	if cols == nil {
+		cols = t.cols(fields, "")
+		t.colsCache[typ|fields] = cols
+	}
+
+	return cols
 }
 
 // cols get fields names, each field prepend a prefix string

@@ -5,6 +5,132 @@ import (
 )
 
 const (
+	FOLLOW_USERID uint64 = 1 << iota
+	FOLLOW_FOLLOWUSERID
+
+	followFieldEnd               = iota
+	followFieldsAll              = 1<<followFieldEnd - 1
+	followFieldsExcpUserId       = followFieldsAll & (^FOLLOW_USERID)
+	followFieldsExcpFollowUserId = followFieldsAll & (^FOLLOW_FOLLOWUSERID)
+
+	FollowUserIdCol       = "user_id"
+	FollowFollowUserIdCol = "follow_user_id"
+)
+
+var (
+	// DB is the global DB instance
+	followInstance = &Follow{}
+	FollowTable    = DB.Table(followInstance)
+)
+
+func (f *Follow) Table() string {
+	return "user_follow"
+}
+
+func (f *Follow) Columns() []string {
+	return []string{
+		FollowUserIdCol, FollowFollowUserIdCol,
+	}
+}
+
+func (f *Follow) Vals(fields uint64, vals []interface{}) {
+	if fields != 0 {
+		if fields == followFieldsAll {
+			vals[0] = f.UserId
+			vals[1] = f.FollowUserId
+
+		} else {
+			index := 0
+			if fields&FOLLOW_USERID != 0 {
+				vals[index] = f.UserId
+				index++
+			}
+			if fields&FOLLOW_FOLLOWUSERID != 0 {
+				vals[index] = f.FollowUserId
+				index++
+			}
+		}
+	}
+}
+
+func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
+	if fields != 0 {
+		if fields == followFieldsAll {
+			ptrs[0] = &(f.UserId)
+			ptrs[1] = &(f.FollowUserId)
+
+		} else {
+			index := 0
+			if fields&FOLLOW_USERID != 0 {
+				ptrs[index] = &(f.UserId)
+				index++
+			}
+			if fields&FOLLOW_FOLLOWUSERID != 0 {
+				ptrs[index] = &(f.FollowUserId)
+				index++
+			}
+		}
+	}
+}
+
+func (f *Follow) txDo(do func(gomodel.Tx, *Follow) error) (err error) {
+	tx, err := DB.Begin()
+	if err != nil {
+		return
+	}
+
+	defer tx.DeferDone(&err)
+
+	err = do(tx, f)
+	return
+}
+
+type (
+	followStore struct {
+		Values []Follow
+		Fields uint64
+	}
+)
+
+func (s *followStore) Init(size int) {
+	if cap(s.Values) < size {
+		s.Values = make([]Follow, size)
+	} else {
+		s.Values = s.Values[:size]
+	}
+}
+
+func (s *followStore) Final(size int) {
+	s.Values = s.Values[:size]
+}
+
+func (s *followStore) Ptrs(index int, ptrs []interface{}) {
+	s.Values[index].Ptrs(s.Fields, ptrs)
+}
+
+func (s *followStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]Follow, 2*c)
+		copy(values, s.Values)
+		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
+	}
+
+	panic("unexpected capacity of followStore")
+}
+
+func (s *followStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
+	}
+}
+
+const (
 	USER_ID uint64 = 1 << iota
 	USER_NAME
 	USER_AGE
@@ -164,132 +290,6 @@ func (s *userStore) Realloc(count int) int {
 }
 
 func (s *userStore) Clear() {
-	if s.Values != nil {
-		s.Values = s.Values[:0]
-	}
-}
-
-const (
-	FOLLOW_USERID uint64 = 1 << iota
-	FOLLOW_FOLLOWUSERID
-
-	followFieldEnd               = iota
-	followFieldsAll              = 1<<followFieldEnd - 1
-	followFieldsExcpUserId       = followFieldsAll & (^FOLLOW_USERID)
-	followFieldsExcpFollowUserId = followFieldsAll & (^FOLLOW_FOLLOWUSERID)
-
-	FollowUserIdCol       = "user_id"
-	FollowFollowUserIdCol = "follow_user_id"
-)
-
-var (
-	// DB is the global DB instance
-	followInstance = &Follow{}
-	FollowTable    = DB.Table(followInstance)
-)
-
-func (f *Follow) Table() string {
-	return "user_follow"
-}
-
-func (f *Follow) Columns() []string {
-	return []string{
-		FollowUserIdCol, FollowFollowUserIdCol,
-	}
-}
-
-func (f *Follow) Vals(fields uint64, vals []interface{}) {
-	if fields != 0 {
-		if fields == followFieldsAll {
-			vals[0] = f.UserId
-			vals[1] = f.FollowUserId
-
-		} else {
-			index := 0
-			if fields&FOLLOW_USERID != 0 {
-				vals[index] = f.UserId
-				index++
-			}
-			if fields&FOLLOW_FOLLOWUSERID != 0 {
-				vals[index] = f.FollowUserId
-				index++
-			}
-		}
-	}
-}
-
-func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
-	if fields != 0 {
-		if fields == followFieldsAll {
-			ptrs[0] = &(f.UserId)
-			ptrs[1] = &(f.FollowUserId)
-
-		} else {
-			index := 0
-			if fields&FOLLOW_USERID != 0 {
-				ptrs[index] = &(f.UserId)
-				index++
-			}
-			if fields&FOLLOW_FOLLOWUSERID != 0 {
-				ptrs[index] = &(f.FollowUserId)
-				index++
-			}
-		}
-	}
-}
-
-func (f *Follow) txDo(do func(gomodel.Tx, *Follow) error) (err error) {
-	tx, err := DB.Begin()
-	if err != nil {
-		return
-	}
-
-	defer tx.DeferDone(&err)
-
-	err = do(tx, f)
-	return
-}
-
-type (
-	followStore struct {
-		Values []Follow
-		Fields uint64
-	}
-)
-
-func (s *followStore) Init(size int) {
-	if cap(s.Values) < size {
-		s.Values = make([]Follow, size)
-	} else {
-		s.Values = s.Values[:size]
-	}
-}
-
-func (s *followStore) Final(size int) {
-	s.Values = s.Values[:size]
-}
-
-func (s *followStore) Ptrs(index int, ptrs []interface{}) {
-	s.Values[index].Ptrs(s.Fields, ptrs)
-}
-
-func (s *followStore) Realloc(count int) int {
-	if c := cap(s.Values); c == count {
-		values := make([]Follow, 2*c)
-		copy(values, s.Values)
-		s.Values = values
-
-		return 2 * c
-	} else if c > count {
-		s.Values = s.Values[:c]
-
-		return c
-	}
-
-	panic("unexpected capacity of followStore")
-}
-
-func (s *followStore) Clear() {
 	if s.Values != nil {
 		s.Values = s.Values[:0]
 	}

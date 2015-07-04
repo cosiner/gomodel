@@ -48,23 +48,17 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	return nil
 }
 
-// register save table of model
-func (db *DB) register(model Model, table string) *Table {
-	t := parseModel(model, db)
-	db.tables[table] = t
-
-	return t
-}
-
 // Table return infomation of given model
 // if table not exist, do parse and save it
 func (db *DB) Table(model Model) *Table {
 	table := model.Table()
-	if t, has := db.tables[table]; has {
-		return t
+	t, has := db.tables[table]
+	if !has {
+		t = parseModel(model, db)
+		db.tables[table] = t
 	}
 
-	return db.register(model, table)
+	return t
 }
 
 func (db *DB) Insert(model Model, fields uint64, resType ResultType) (int64, error) {

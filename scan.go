@@ -21,7 +21,7 @@ type (
 		// when call the All method of Scanner.
 		// The return value shold be the new size of Store.
 		// If don't want to continue, just return a non-positive number.
-		Realloc(currSize int) int
+		Realloc(currSize int) (latest int)
 	}
 
 	// Scanner scan database rows to data Store when Error is nil, if the Rows is

@@ -50,8 +50,6 @@ func createTables() {
 		),
 	)
 
-	dropTables()
-
 	_, err := DB.DB.Exec(`
 CREATE TABLE user (
     id int AUTO_INCREMENT,

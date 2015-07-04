@@ -17,7 +17,6 @@ The [gomodel cmd tool and SQL convertion for structures](https://github.com/cosi
 There is a detailed example [User-Follow](https://github.com/cosiner/gomodel/tree/master/example/userfollow).
 #### User
 ```Go
-
 var (
     ErrDuplicateUserName = httperrs.Conflict.NewS("user name already exists")
     ErrNoUser            = httperrs.NotFound.NewS("user not found")
@@ -128,7 +127,6 @@ func (f *Follow) updateFollowInfo(tx gomodel.Tx, err error, c int) error {
     }
     return err
 }
-
 ```
 
 # LICENSE
