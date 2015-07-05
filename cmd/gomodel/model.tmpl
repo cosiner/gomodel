@@ -1,3 +1,9 @@
+package gomodel
+
+import (
+    "github.com/cosiner/gomodel"
+)
+
 {{range $model, $fields := .Models}}
 {{$normal := $model.Name}}
 {{$unexport := $model.Unexported}}
@@ -17,17 +23,11 @@ const (
 )
 
 var (
-    {{$unexport}}Instance = &{{$normal}}{}
+    {{$unexport}}Instance = new({{$normal}})
 )
 
 func {{$recv}} Table() string {
-    return {{if HasPrefix $model.Table "$" }} {{Slice $model.Table 1 -1}} {{else}} "{{$model.Table}}" {{end}}
-}
-
-func {{$recv}} Columns() []string {
-    return []string{
-    {{range $index, $field:=$fields}}{{$normal}}{{$field.Name}}Col,{{end}}
-    }
+    return "{{$model.Table}}"
 }
 
 {{if $model.Nocache}}
@@ -35,6 +35,12 @@ func {{$recv}} Nocache() bool {
     return {{$model.Nocache}}
 }
 {{end}}
+
+func {{$recv}} Columns() []string {
+    return []string{
+    {{range $index, $field:=$fields}}{{$normal}}{{$field.Name}}Col,{{end}}
+    }
+}
 
 func {{$recv}} Vals(fields uint64, vals []interface{}) {
     if fields != 0 {
@@ -116,10 +122,9 @@ func (s *{{$unexport}}Store) Realloc(count int) int {
 
     panic("unexpected capacity of {{$unexport}}Store")
 }
-
-func (s *{{$unexport}}Store) Clear() {
-    if s.Values != nil {
-        s.Values = s.Values[:0]
+func (a *{{$unexport}}Store) Clear() {
+    if a.Values != nil {
+        a.Values = a.Values[:0]
     }
 }
 {{end}}

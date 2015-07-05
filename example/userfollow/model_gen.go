@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	userInstance = &User{}
+	userInstance = new(User)
 )
 
 func (u *User) Table() string {
@@ -160,10 +160,9 @@ func (s *userStore) Realloc(count int) int {
 
 	panic("unexpected capacity of userStore")
 }
-
-func (s *userStore) Clear() {
-	if s.Values != nil {
-		s.Values = s.Values[:0]
+func (a *userStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
 	}
 }
 
@@ -181,7 +180,7 @@ const (
 )
 
 var (
-	followInstance = &Follow{}
+	followInstance = new(Follow)
 )
 
 func (f *Follow) Table() string {
@@ -284,10 +283,9 @@ func (s *followStore) Realloc(count int) int {
 
 	panic("unexpected capacity of followStore")
 }
-
-func (s *followStore) Clear() {
-	if s.Values != nil {
-		s.Values = s.Values[:0]
+func (a *followStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
 	}
 }
 

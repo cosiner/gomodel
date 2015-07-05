@@ -2,7 +2,7 @@ package test
 
 //go:generate cp tmpl.head model_gen.go
 //go:generate gomodel -sql -t sql.tmpl $GOFILE astconv.go
-//go:generate gomodel -model -t ../model.tmpl $GOFILE
+//go:generate gomodel -model $GOFILE
 //go:generate gofmt -w model_gen.go
 
 type User struct {
