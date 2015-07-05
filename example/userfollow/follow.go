@@ -22,7 +22,7 @@ type Follow struct {
 //      WHERE EXISTS(SELECT Id FROM User WHERE Id=?)
 //]
 func (f *Follow) Add() error {
-	return f.txDo(func(tx gomodel.Tx, f *Follow) error {
+	return f.txDo(DB, func(tx gomodel.Tx, f *Follow) error {
 		stmt, err := tx.PrepareById(insertUserFollowSQL)
 		c, err := gomodel.CloseUpdate(stmt, err, gomodel.FieldVals(f, followFieldsAll, f.FollowUserId)...)
 
@@ -34,7 +34,7 @@ func (f *Follow) Add() error {
 }
 
 func (f *Follow) Delete() error {
-	return f.txDo(func(tx gomodel.Tx, f *Follow) error {
+	return f.txDo(DB, func(tx gomodel.Tx, f *Follow) error {
 		c, err := tx.Delete(f, followFieldsAll)
 		err = dberrs.NoAffects(c, err, ErrNonFollow)
 

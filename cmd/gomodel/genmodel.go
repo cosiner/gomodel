@@ -3,14 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/os2/file"
 	"github.com/cosiner/gohper/os2/path2"
 	"github.com/cosiner/gohper/terminal/color"
+	"github.com/cosiner/gohper/unsafe2"
 )
 
 var (
@@ -105,8 +108,29 @@ func main() {
 	}
 
 	errors.Fatal(
-		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
-			t, err := template.ParseFiles(tmplfile)
+		file.OpenOrCreate(outfile, false, func(fd *os.File) (err error) {
+			t := template.New("tmpl").Funcs(map[string]interface{}{
+				"HasPrefix": strings.HasPrefix,
+				"Slice": func(s string, start, end int) string {
+					if end == -1 {
+						end = len(s)
+					}
+					return s[start:end]
+				},
+			})
+
+			tfd, err := os.Open(tmplfile)
+			if err != nil {
+				return err
+			}
+			defer tfd.Close()
+
+			content, err := ioutil.ReadAll(tfd)
+			if err != nil {
+				return err
+			}
+
+			t, err = t.Parse(unsafe2.String(content))
 			if err != nil {
 				return err
 			}

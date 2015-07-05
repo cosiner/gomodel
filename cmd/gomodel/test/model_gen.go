@@ -35,9 +35,7 @@ const (
 )
 
 var (
-	// DB is the global DB instance
 	userInstance = &User{}
-	UserTable    = DB.Table(userInstance)
 )
 
 func (u *User) Table() string {
@@ -120,8 +118,8 @@ func (u *User) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (u *User) txDo(do func(gomodel.Tx, *User) error) (err error) {
-	tx, err := DB.Begin()
+func (u *User) txDo(db *gomodel.DB, do func(gomodel.Tx, *User) error) (err error) {
+	tx, err := db.Begin()
 	if err != nil {
 		return
 	}
@@ -139,34 +137,41 @@ type (
 	}
 )
 
-func (a *userStore) Make(size int) {
-	if len(a.Values) != 0 {
-		a.Values = a.Values[:size] // final size
-		return
+func (s *userStore) Init(size int) {
+	if cap(s.Values) < size {
+		s.Values = make([]User, size)
+	} else {
+		s.Values = s.Values[:size]
 	}
-
-	if c := cap(a.Values); c >= size {
-		a.Values = a.Values[:c] //  enough memory to store
-		return
-	}
-
-	a.Values = make([]User, size)
 }
 
-func (a *userStore) Ptrs(index int, ptrs []interface{}) bool {
-	if index == len(a.Values) {
-		values := make([]User, 2*index)
-		copy(values, a.Values)
-		a.Values = values
-	}
-
-	a.Values[index].Ptrs(a.Fields, ptrs)
-	return true
+func (s *userStore) Final(size int) {
+	s.Values = s.Values[:size]
 }
 
-func (a *userStore) Clear() {
-	if a.Values != nil {
-		a.Values = a.Values[:0]
+func (s *userStore) Ptrs(index int, ptrs []interface{}) {
+	s.Values[index].Ptrs(s.Fields, ptrs)
+}
+
+func (s *userStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]User, 2*c)
+		copy(values, s.Values)
+		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
+	}
+
+	panic("unexpected capacity of userStore")
+}
+
+func (s *userStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
 	}
 }
 
@@ -184,9 +189,7 @@ const (
 )
 
 var (
-	// DB is the global DB instance
 	followInstance = &Follow{}
-	FollowTable    = DB.Table(followInstance)
 )
 
 func (f *Follow) Table() string {
@@ -239,8 +242,8 @@ func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (f *Follow) txDo(do func(gomodel.Tx, *Follow) error) (err error) {
-	tx, err := DB.Begin()
+func (f *Follow) txDo(db *gomodel.DB, do func(gomodel.Tx, *Follow) error) (err error) {
+	tx, err := db.Begin()
 	if err != nil {
 		return
 	}
@@ -258,34 +261,41 @@ type (
 	}
 )
 
-func (a *followStore) Make(size int) {
-	if len(a.Values) != 0 {
-		a.Values = a.Values[:size] // final size
-		return
+func (s *followStore) Init(size int) {
+	if cap(s.Values) < size {
+		s.Values = make([]Follow, size)
+	} else {
+		s.Values = s.Values[:size]
 	}
-
-	if c := cap(a.Values); c >= size {
-		a.Values = a.Values[:c] //  enough memory to store
-		return
-	}
-
-	a.Values = make([]Follow, size)
 }
 
-func (a *followStore) Ptrs(index int, ptrs []interface{}) bool {
-	if index == len(a.Values) {
-		values := make([]Follow, 2*index)
-		copy(values, a.Values)
-		a.Values = values
-	}
-
-	a.Values[index].Ptrs(a.Fields, ptrs)
-	return true
+func (s *followStore) Final(size int) {
+	s.Values = s.Values[:size]
 }
 
-func (a *followStore) Clear() {
-	if a.Values != nil {
-		a.Values = a.Values[:0]
+func (s *followStore) Ptrs(index int, ptrs []interface{}) {
+	s.Values[index].Ptrs(s.Fields, ptrs)
+}
+
+func (s *followStore) Realloc(count int) int {
+	if c := cap(s.Values); c == count {
+		values := make([]Follow, 2*c)
+		copy(values, s.Values)
+		s.Values = values
+
+		return 2 * c
+	} else if c > count {
+		s.Values = s.Values[:c]
+
+		return c
+	}
+
+	panic("unexpected capacity of followStore")
+}
+
+func (s *followStore) Clear() {
+	if s.Values != nil {
+		s.Values = s.Values[:0]
 	}
 }
 

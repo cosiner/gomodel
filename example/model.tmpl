@@ -23,13 +23,11 @@ const (
 )
 
 var (
-    // DB is the global DB instance
     {{$unexport}}Instance = &{{$normal}}{}
-    {{$normal}}Table = DB.Table({{$unexport}}Instance)
 )
 
 func {{$recv}} Table() string {
-    return "{{$model.Table}}"
+    return {{if HasPrefix $model.Table "$" }} {{Slice $model.Table 1 -1}} {{else}} "{{$model.Table}}" {{end}}
 }
 
 func {{$recv}} Columns() []string {
@@ -74,8 +72,8 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     }
 }
 
-func {{$recv}} txDo(do func(gomodel.Tx, *{{$normal}}) error) (err error) {
-    tx, err := DB.Begin()
+func {{$recv}} txDo(db *gomodel.DB, do func(gomodel.Tx, *{{$normal}}) error) (err error) {
+    tx, err := db.Begin()
     if err != nil {
         return
     }

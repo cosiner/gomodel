@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/cosiner/gohper/ds/sortedmap"
-	"github.com/cosiner/gohper/goutil"
 	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/utils/ast"
 	"github.com/cosiner/gohper/utils/pair"
@@ -92,10 +91,6 @@ func (v Visitor) parseDir(dir string) error {
 func (v Visitor) parseFile(file string) error {
 	parser := ast.Parser{
 		Struct: func(a *ast.Attrs) error {
-			if !goutil.IsExported(a.TypeName) {
-				return ast.TYPE_END
-			}
-
 			var table string
 			if table = a.S.Tag.Get("table"); table == "-" {
 				return ast.TYPE_END
