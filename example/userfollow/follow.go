@@ -23,8 +23,7 @@ type Follow struct {
 //]
 func (f *Follow) Add() error {
 	return f.txDo(DB, func(tx gomodel.Tx, f *Follow) error {
-		stmt, err := tx.PrepareById(insertUserFollowSQL)
-		c, err := gomodel.CloseUpdate(stmt, err, gomodel.FieldVals(f, followFieldsAll, f.FollowUserId)...)
+		c, err := tx.UpdateById(insertUserFollowSQL, gomodel.FieldVals(f, followFieldsAll, f.FollowUserId)...)
 
 		err = dberrs.NoAffects(c, err, ErrNoUser)
 		err = dberrs.DuplicateKeyError(err, dberrs.PRIMARY_KEY, ErrFollowed)
