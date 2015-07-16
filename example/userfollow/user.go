@@ -25,7 +25,7 @@ func (u *User) Add() error {
 	u.Followers = 0
 
 	id, err := DB.Insert(u, userFieldsExcpId, gomodel.RES_ID)
-	err = dberrs.DuplicateKeyError(err, DB, UserNameCol, ErrDuplicateUserName)
+	err = dberrs.DuplicateKeyError(DB, err, UserNameCol, ErrDuplicateUserName)
 	if err == nil {
 		u.Id = id
 	}

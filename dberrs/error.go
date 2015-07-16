@@ -127,24 +127,29 @@ func parseKeyError(err error, key string, newErr error, getKey KeyParser) error 
 	panic("unexpected key: " + k + ", expect: " + key)
 }
 
-func DuplicateKeyFunc(err error, driver Driverer, keyfunc func(key string) error) error {
+func DuplicateKeyFunc(driver Driverer, err error, keyfunc func(key string) error) error {
 	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
 	return parseKeyFunc(err, keyfunc, duplicateKey)
 }
 
-func DuplicateKeyError(err error, driver Driverer, key string, newErr error) error {
+func DuplicateKeyError(driver Driverer, err error, key string, newErr error) error {
 	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
 	return parseKeyError(err, key, newErr, duplicateKey)
 }
 
-func ForeignKeyFunc(err error, driver Driverer, keyfunc func(key string) error) error {
+func ForeignKeyFunc(driver Driverer, err error, keyfunc func(key string) error) error {
 	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
 	return parseKeyFunc(err, keyfunc, foreignKey)
 }
 
-func ForeignKeyError(err error, driver Driverer, key string, newErr error) error {
+func ForeignKeyError(driver Driverer, err error, key string, newErr error) error {
 	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
 	return parseKeyError(err, key, newErr, foreignKey)
+}
+
+func DuplicatePrimaryKeyError(driver Driverer, err error, newErr error) error {
+	info := driverInfos[driver.Driver()]
+	return parseKeyError(err, info.PrimaryKeyWord, newErr, info.DuplicateKeyParser)
 }
 
 func PrimaryKey(driver Driverer) string {
