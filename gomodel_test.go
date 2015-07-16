@@ -33,3 +33,8 @@ func TestCols(t *testing.T) {
 		Expect("").Arg(cols.Paramed()).
 		Run(t, strings2.RemoveSpace)
 }
+
+func TestInterface(t *testing.T) {
+	var _ CommonRunner = &DB{}
+	var _ CommonRunner = Tx{}
+}

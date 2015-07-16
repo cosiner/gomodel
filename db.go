@@ -1,4 +1,4 @@
-// Package database is a library help for interact with database by model
+// Package gomodel is a library help for interact with database efficiently
 package gomodel
 
 import "database/sql"
@@ -7,6 +7,7 @@ type (
 	// DB holds database connections, store all tables
 	DB struct {
 		*sql.DB
+		driver string
 		tables map[string]*Table
 		cache  cache
 
@@ -39,6 +40,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	if err != nil {
 		return err
 	}
+	db.driver = driver
 
 	db_.SetMaxIdleConns(maxIdle)
 	db_.SetMaxOpenConns(maxOpen)
@@ -46,6 +48,10 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	db.cache = newCache()
 
 	return nil
+}
+
+func (db *DB) Driver() string {
+	return db.driver
 }
 
 // Table return infomation of given model

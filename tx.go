@@ -9,6 +9,14 @@ type (
 	}
 )
 
+func (tx Tx) Driver() string {
+	return tx.db.Driver()
+}
+
+func (tx Tx) Table(model Model) *Table {
+	return tx.db.Table(model)
+}
+
 func (tx Tx) Insert(model Model, fields uint64, resType ResultType) (int64, error) {
 	return tx.ArgsInsert(model, fields, resType, FieldVals(model, fields)...)
 }
@@ -109,9 +117,16 @@ func (tx Tx) ArgsIncrBy(model Model, field, whereFields uint64, args ...interfac
 	return CloseUpdate(stmt, err, args...)
 }
 
-// UpdateById execute a update operation, return resolved result
-func (tx Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
-	return tx.ExecById(sqlid, RES_ROWS, args...)
+// ExecUpdate execute a update operation, return resolved result
+func (tx Tx) ExecUpdate(sql string, args ...interface{}) (int64, error) {
+	return tx.Exec(sql, RES_ROWS, args...)
+}
+
+// Exec execute a update operation, return resolved result
+func (tx Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
+	res, err := tx.Tx.Exec(sql, args...)
+
+	return ResolveResult(res, err, resType)
 }
 
 // ExecById execute a update operation, return rows affected
@@ -119,6 +134,11 @@ func (tx Tx) ExecById(sqlid uint64, resType ResultType, args ...interface{}) (in
 	stmt, err := tx.PrepareById(sqlid)
 
 	return CloseExec(stmt, err, resType, args...)
+}
+
+// UpdateById execute a update operation, return resolved result
+func (tx Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
+	return tx.ExecById(sqlid, RES_ROWS, args...)
 }
 
 func (tx Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
@@ -172,8 +192,4 @@ func (tx Tx) PrepareById(sqlid uint64) (Stmt, error) {
 	stmt, err := tx.db.cache.PrepareById(tx, sqlid)
 
 	return WrapStmt(STMT_CLOSEABLE, stmt, err)
-}
-
-func (tx Tx) Table(model Model) *Table {
-	return tx.db.Table(model)
 }

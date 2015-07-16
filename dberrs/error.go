@@ -11,14 +11,51 @@ import (
 
 // Only tested for mysql
 const (
-	// PRIMARY_KEY
-	PRIMARY_KEY = "PRIMARY"
-	NonError    = errors.Err("non error")
+	NonError = errors.Err("non error")
 )
 
-type KeyParser func(err error) (key string)
+type (
+	Driverer interface {
+		Driver() string
+	}
 
-var duplicateKey = func(err error) string {
+	StringDriver string
+
+	KeyParser func(err error) (key string)
+
+	DriverInfo struct {
+		ForeignKeyParser   KeyParser
+		DuplicateKeyParser KeyParser
+		PrimaryKeyWord     string
+	}
+)
+
+func (s StringDriver) Driver() string {
+	return string(s)
+}
+
+var (
+	driverInfos = map[string]DriverInfo{
+		"mysql": DriverInfo{
+			ForeignKeyParser:   mysqlForeignKey,
+			DuplicateKeyParser: mysqlDuplicateKey,
+			PrimaryKeyWord:     "PRIMARY",
+		},
+	}
+)
+
+func RegisterDriverInfo(driver Driverer, info DriverInfo) {
+	if _, has := driverInfos[driver.Driver()]; has {
+		panic("driver info for " + driver.Driver() + " already registered")
+	}
+	if info.ForeignKeyParser == nil || info.DuplicateKeyParser == nil || info.PrimaryKeyWord == "" {
+		panic("some info for driver " + driver.Driver() + " is lacked ")
+	}
+
+	driverInfos[driver.Driver()] = info
+}
+
+func mysqlDuplicateKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -43,7 +80,7 @@ var duplicateKey = func(err error) string {
 	return s
 }
 
-var foreignKey = func(err error) string {
+func mysqlForeignKey(err error) string {
 	if err == nil {
 		return ""
 	}
@@ -60,17 +97,6 @@ var foreignKey = func(err error) string {
 	index += len(FOREIGNKEY) + 2
 	s = s[index:]
 	return s[:strings.IndexByte(s, ')')-1]
-}
-
-// SetupKeyParsers change the default key parser if new parser is non-nill
-func SetupKeyParsers(duplicate, foreign KeyParser) {
-	if duplicate != nil {
-		duplicateKey = duplicate
-	}
-
-	if foreign != nil {
-		foreignKey = foreign
-	}
 }
 
 func parseKeyFunc(err error, keyfunc func(key string) error, getKey KeyParser) error {
@@ -101,20 +127,28 @@ func parseKeyError(err error, key string, newErr error, getKey KeyParser) error 
 	panic("unexpected key: " + k + ", expect: " + key)
 }
 
-func DuplicateKeyFunc(err error, keyfunc func(key string) error) error {
+func DuplicateKeyFunc(err error, driver Driverer, keyfunc func(key string) error) error {
+	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
 	return parseKeyFunc(err, keyfunc, duplicateKey)
 }
 
-func DuplicateKeyError(err error, key string, newErr error) error {
+func DuplicateKeyError(err error, driver Driverer, key string, newErr error) error {
+	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
 	return parseKeyError(err, key, newErr, duplicateKey)
 }
 
-func ForeignKeyFunc(err error, keyfunc func(key string) error) error {
+func ForeignKeyFunc(err error, driver Driverer, keyfunc func(key string) error) error {
+	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
 	return parseKeyFunc(err, keyfunc, foreignKey)
 }
 
-func ForeignKeyError(err error, key string, newErr error) error {
+func ForeignKeyError(err error, driver Driverer, key string, newErr error) error {
+	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
 	return parseKeyError(err, key, newErr, foreignKey)
+}
+
+func PrimaryKey(driver Driverer) string {
+	return driverInfos[driver.Driver()].PrimaryKeyWord
 }
 
 func NoRows(err, newErr error) error {

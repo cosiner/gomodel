@@ -3,6 +3,31 @@ package gomodel
 import "database/sql"
 
 type (
+	CommonRunner interface {
+		Driver() string
+		Table(model Model) *Table
+		Insert(model Model, fields uint64, resType ResultType) (int64, error)
+		ArgsInsert(model Model, fields uint64, resType ResultType, args ...interface{}) (int64, error)
+		Update(model Model, fields, whereFields uint64) (int64, error)
+		ArgsUpdate(model Model, fields, whereFields uint64, args ...interface{}) (int64, error)
+		Delete(model Model, whereFields uint64) (int64, error)
+		ArgsDelete(model Model, whereFields uint64, args ...interface{}) (int64, error)
+		One(model Model, fields, whereFields uint64) error
+		Limit(store Store, model Model, fields, whereFields uint64, start, count int) error
+		ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error
+		All(store Store, model Model, fields, whereFields uint64) error
+		ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error
+		Count(model Model, whereFields uint64) (count int64, err error)
+		ArgsCount(model Model, whereFields uint64, args ...interface{}) (count int64, err error)
+		IncrBy(model Model, field, whereFields uint64, count int) (int64, error)
+		ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error)
+		ExecUpdate(sql string, args ...interface{}) (int64, error)
+		Exec(sql string, resType ResultType, args ...interface{}) (int64, error)
+		ExecById(sqlid uint64, resTyp ResultType, args ...interface{}) (int64, error)
+		UpdateById(sqlid uint64, args ...interface{}) (int64, error)
+		QueryById(sqlid uint64, args ...interface{}) Scanner
+	}
+
 	QueryExecer interface {
 		Exec(...interface{}) (sql.Result, error)
 		Query(...interface{}) (*sql.Rows, error)

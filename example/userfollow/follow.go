@@ -26,7 +26,7 @@ func (f *Follow) Add() error {
 		c, err := tx.UpdateById(insertUserFollowSQL, gomodel.FieldVals(f, followFieldsAll, f.FollowUserId)...)
 
 		err = dberrs.NoAffects(c, err, ErrNoUser)
-		err = dberrs.DuplicateKeyError(err, dberrs.PRIMARY_KEY, ErrFollowed)
+		err = dberrs.DuplicateKeyError(err, tx, dberrs.PrimaryKey(tx), ErrFollowed)
 
 		return f.updateFollowInfo(tx, err, 1)
 	})
