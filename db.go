@@ -128,7 +128,6 @@ func (db *DB) All(store Store, model Model, fields, whereFields uint64) error {
 	return db.ArgsAll(store, model, fields, whereFields, FieldVals(model, whereFields)...)
 }
 
-// ArgsAll select all  the last two argument must be "start" and "count"
 func (db *DB) ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtAll(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
