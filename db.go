@@ -104,10 +104,17 @@ func (db *DB) ArgsDelete(model Model, whereFields uint64, args ...interface{}) (
 
 // One select one row from database
 func (db *DB) One(model Model, fields, whereFields uint64) error {
-	stmt, err := db.Table(model).StmtOne(db, fields, whereFields)
-	scanner := Query(stmt, err, FieldVals(model, whereFields)...)
+	return db.ArgsOne(model, fields, whereFields, FieldVals(model, whereFields))
+}
 
-	return scanner.One(FieldPtrs(model, fields)...)
+func (db *DB) ArgsOne(model Model, fields, whereFields uint64, args []interface{}, ptrs ...interface{}) error {
+	stmt, err := db.Table(model).StmtOne(db, fields, whereFields)
+	scanner := Query(stmt, err, args...)
+
+	if len(ptrs) == 0 {
+		ptrs = FieldPtrs(model, fields)
+	}
+	return scanner.One(ptrs...)
 }
 
 func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start, count int) error {
