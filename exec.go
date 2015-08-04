@@ -13,6 +13,7 @@ type (
 		Delete(model Model, whereFields uint64) (int64, error)
 		ArgsDelete(model Model, whereFields uint64, args ...interface{}) (int64, error)
 		One(model Model, fields, whereFields uint64) error
+		ArgsOne(model Model, fields, whereFields uint64, args []interface{}, ptrs ...interface{}) error
 		Limit(store Store, model Model, fields, whereFields uint64, start, count int) error
 		ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error
 		All(store Store, model Model, fields, whereFields uint64) error
