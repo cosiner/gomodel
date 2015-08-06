@@ -1,6 +1,7 @@
 package dbutils
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/cosiner/gohper/errors"
@@ -75,20 +76,42 @@ func CheckFieldForIncrBy(field, fields uint64, count int64) {
 	}
 }
 
-type IncrByFunc func(runner gomodel.CommonRunner, field uint64, count int64, whereArg string) error
+type IncrByFunc func(runner gomodel.CommonRunner, field uint64, whereArgs ...interface{}) error
 
-func FuncForIncrByFieldCount(defaultRunner gomodel.CommonRunner, model gomodel.Model, fields, whereField uint64, noAffectsError error) IncrByFunc {
-	if gomodel.NumFields(whereField) != 1 || gomodel.NumFields(fields) == 0 {
-		panic(errors.Newf("unexpected field count of fields %d and whereField %d", fields, whereField))
+func FuncForIncrByFieldCount(defaultRunner gomodel.CommonRunner, model gomodel.Model, fields, whereFields uint64, noAffectsError error) IncrByFunc {
+	if gomodel.NumFields(whereFields) == 0 || gomodel.NumFields(fields) == 0 {
+		panic(errors.Newf("unexpected field count of fields %d and whereField %d", fields, whereFields))
 	}
 
-	return func(runner gomodel.CommonRunner, field uint64, count int64, whereArg string) error {
+	return func(runner gomodel.CommonRunner, field uint64, whereArgs ...interface{}) error {
+		var count int64
+		switch arg := whereArgs[0].(type) {
+		case int:
+			count = int64(arg)
+		case int8:
+			count = int64(arg)
+		case int16:
+			count = int64(arg)
+		case int32:
+			count = int64(arg)
+		case int64:
+			count = int64(arg)
+		case uint8:
+			count = int64(arg)
+		case uint16:
+			count = int64(arg)
+		case uint32:
+			count = int64(arg)
+		case uint64:
+			count = int64(arg)
+		default:
+			panic(fmt.Sprintf("count %v must be an integer", arg))
+		}
 		CheckFieldForIncrBy(field, fields, count)
 		if runner == nil {
 			runner = defaultRunner
 		}
-		c, err := runner.ArgsIncrBy(model, field, whereField, count, whereArg)
+		c, err := runner.ArgsIncrBy(model, field, whereFields, whereArgs...)
 		return dberrs.NoAffects(c, err, noAffectsError)
 	}
-
 }
