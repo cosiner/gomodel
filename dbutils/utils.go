@@ -10,10 +10,15 @@ import (
 	"github.com/cosiner/gomodel/dberrs"
 )
 
+func QueryOneResultById(runner gomodel.CommonRunner, ptr interface{}, sqlid uint64, args ...interface{}) error {
+	sc := runner.QueryById(sqlid, args...)
+	err := sc.One(ptr)
+	return err
+}
+
 func QueryCountById(runner gomodel.CommonRunner, sqlid uint64, args ...interface{}) (int64, error) {
 	var count int64
-	sc := runner.QueryById(sqlid, args...)
-	err := sc.One(&count)
+	err := QueryOneResultById(runner, &count, sqlid, args...)
 	return count, err
 }
 

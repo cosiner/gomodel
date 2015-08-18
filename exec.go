@@ -79,14 +79,18 @@ func CloseUpdate(exec QueryExecer, err error, args ...interface{}) (int64, error
 
 // Exec execute stmt with given arguments and resolve the result if error is nil
 func CloseExec(exec QueryExecer, err error, typ ResultType, args ...interface{}) (int64, error) {
-	defer exec.Close()
+	if err == nil {
+		defer exec.Close()
+	}
 
 	return Exec(exec, err, typ, args...)
 }
 
 // Query execute the query stmt, error stored in Scanner
 func CloseQuery(exec QueryExecer, err error, args ...interface{}) Scanner {
-	defer exec.Close()
+	if err == nil {
+		defer exec.Close()
+	}
 
 	return Query(exec, err, args...)
 }
