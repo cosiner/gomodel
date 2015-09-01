@@ -131,7 +131,7 @@ func (a *{{$unexport}}Store) Clear() {
 
 var (
 {{range $name, $sql := .SQLs}}
-    {{$name}} = gomodel.NewSqlId(func(gomodel.Tabler) string {
+    {{$name}} = gomodel.NewSqlId(func(gomodel.Executor) string {
         return "{{$sql}}"
     })
 {{end}}

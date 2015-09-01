@@ -10,15 +10,15 @@ import (
 	"github.com/cosiner/gomodel/dberrs"
 )
 
-func QueryOneResultById(runner gomodel.CommonRunner, ptr interface{}, sqlid uint64, args ...interface{}) error {
-	sc := runner.QueryById(sqlid, args...)
+func QueryOneResultById(exec gomodel.Executor, sqlid uint64, ptr interface{}, args ...interface{}) error {
+	sc := exec.QueryById(sqlid, args...)
 	err := sc.One(ptr)
 	return err
 }
 
-func QueryCountById(runner gomodel.CommonRunner, sqlid uint64, args ...interface{}) (int64, error) {
+func QueryCountById(exec gomodel.Executor, sqlid uint64, args ...interface{}) (int64, error) {
 	var count int64
-	err := QueryOneResultById(runner, &count, sqlid, args...)
+	err := QueryOneResultById(exec, sqlid, &count, args...)
 	return count, err
 }
 
@@ -81,14 +81,14 @@ func CheckFieldForIncrBy(field, fields uint64, count int64) {
 	}
 }
 
-type IncrByFunc func(runner gomodel.CommonRunner, field uint64, whereArgs ...interface{}) error
+type IncrByFunc func(exec gomodel.Executor, field uint64, whereArgs ...interface{}) error
 
-func FuncForIncrByFieldCount(defaultRunner gomodel.CommonRunner, model gomodel.Model, fields, whereFields uint64, noAffectsError error) IncrByFunc {
+func FuncForIncrByFieldCount(defaultRunner gomodel.Executor, model gomodel.Model, fields, whereFields uint64, noAffectsError error) IncrByFunc {
 	if gomodel.NumFields(whereFields) == 0 || gomodel.NumFields(fields) == 0 {
 		panic(errors.Newf("unexpected field count of fields %d and whereField %d", fields, whereFields))
 	}
 
-	return func(runner gomodel.CommonRunner, field uint64, whereArgs ...interface{}) error {
+	return func(exec gomodel.Executor, field uint64, whereArgs ...interface{}) error {
 		var count int64
 		switch arg := whereArgs[0].(type) {
 		case int:
@@ -113,10 +113,10 @@ func FuncForIncrByFieldCount(defaultRunner gomodel.CommonRunner, model gomodel.M
 			panic(fmt.Sprintf("count %v must be an integer", arg))
 		}
 		CheckFieldForIncrBy(field, fields, count)
-		if runner == nil {
-			runner = defaultRunner
+		if exec == nil {
+			exec = defaultRunner
 		}
-		c, err := runner.ArgsIncrBy(model, field, whereFields, whereArgs...)
+		c, err := exec.ArgsIncrBy(model, field, whereFields, whereArgs...)
 		return dberrs.NoAffects(c, err, noAffectsError)
 	}
 }

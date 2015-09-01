@@ -1,11 +1,11 @@
 package userfollow
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gomodel"
+	"github.com/cosiner/gomodel/driver"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -28,26 +28,23 @@ func werckerEnv(key, defval string) string {
 	return defval
 }
 
-func dsn() string {
+func dsn(dri gomodel.Driver) string {
 	host := werckerEnv("HOST", "localhost")
 	port := werckerEnv("PORT", "3306")
 	username := werckerEnv("USERNAME", "root")
 	password := werckerEnv("PASSWORD", "root")
 	database := werckerEnv("DATABASE", "test")
 
-	return fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?charset=utf8&clientFoundRows=true",
-		username, password, host, port, database)
+	return dri.DSN(host, port, username, password, database, map[string]string{
+		"charset":         "utf8",
+		"clientFoundRows": "true",
+	})
 }
 
 func createTables() {
+	dri := driver.MySQL("mysql")
 	errors.Panic(
-		DB.Connect(
-			"mysql",
-			dsn(),
-			1,
-			1,
-		),
+		DB.Connect(dri, dsn(dri), 1, 1),
 	)
 
 	_, err := DB.DB.Exec(`

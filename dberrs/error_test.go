@@ -5,15 +5,16 @@ import (
 
 	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gohper/testing2"
+	"github.com/cosiner/gomodel/driver"
 )
 
 func TestError(t *testing.T) {
 	tt := testing2.Wrap(t)
-	mysql := StringDriver("mysql")
+	mysql := driver.MySQL("mysql")
 
 	err := errors.Err(`Duplicate entry '14d1b6c34a001-1648e0754a001' for key 'PRIMARY'`) // for combined primary key
-	tt.Eq(PrimaryKey(mysql), mysqlDuplicateKey(err))
+	tt.Eq(mysql.PrimaryKey(), mysql.DuplicateKey(err))
 
 	err = errors.Err("CONSTRAINT `article_vote_ibfk_1` FOREIGN KEY (`article_id`) REFERENCES `article` (`article_id`)")
-	tt.Eq("article_id", mysqlForeignKey(err))
+	tt.Eq("article_id", mysql.ForeignKey(err))
 }

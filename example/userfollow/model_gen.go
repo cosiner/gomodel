@@ -290,7 +290,7 @@ func (a *followStore) Clear() {
 }
 
 var (
-	insertUserFollowSQL = gomodel.NewSqlId(func(gomodel.Tabler) string {
+	insertUserFollowSQL = gomodel.NewSqlId(func(gomodel.Executor) string {
 		return "insert into user_follow(user_id, follow_user_id) select ?, ? from DUAL where exists (select id from user where id = ?)"
 	})
 )

@@ -35,6 +35,6 @@ func TestCols(t *testing.T) {
 }
 
 func TestInterface(t *testing.T) {
-	var _ CommonRunner = &DB{}
-	var _ CommonRunner = Tx{}
+	var _ Executor = &DB{}
+	var _ Executor = Tx{}
 }

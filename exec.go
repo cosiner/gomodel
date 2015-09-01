@@ -3,36 +3,41 @@ package gomodel
 import "database/sql"
 
 type (
-	CommonRunner interface {
-		Driver() string
+	Executor interface {
+		Driver() Driver
 		Table(model Model) *Table
+		Prepare(sql string) (*sql.Stmt, error)
+
 		Insert(model Model, fields uint64, resType ResultType) (int64, error)
 		ArgsInsert(model Model, fields uint64, resType ResultType, args ...interface{}) (int64, error)
+
 		Update(model Model, fields, whereFields uint64) (int64, error)
 		ArgsUpdate(model Model, fields, whereFields uint64, args ...interface{}) (int64, error)
+
 		Delete(model Model, whereFields uint64) (int64, error)
 		ArgsDelete(model Model, whereFields uint64, args ...interface{}) (int64, error)
+
 		One(model Model, fields, whereFields uint64) error
 		ArgsOne(model Model, fields, whereFields uint64, args []interface{}, ptrs ...interface{}) error
-		Limit(store Store, model Model, fields, whereFields uint64, start, count int) error
+
+		Limit(store Store, model Model, fields, whereFields uint64, start, count int64) error
 		ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error
+
 		All(store Store, model Model, fields, whereFields uint64) error
 		ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error
+
 		Count(model Model, whereFields uint64) (count int64, err error)
 		ArgsCount(model Model, whereFields uint64, args ...interface{}) (count int64, err error)
+
 		IncrBy(model Model, field, whereFields uint64, count int) (int64, error)
 		ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error)
+
 		ExecUpdate(sql string, args ...interface{}) (int64, error)
 		Exec(sql string, resType ResultType, args ...interface{}) (int64, error)
+
 		ExecById(sqlid uint64, resTyp ResultType, args ...interface{}) (int64, error)
 		UpdateById(sqlid uint64, args ...interface{}) (int64, error)
 		QueryById(sqlid uint64, args ...interface{}) Scanner
-	}
-
-	QueryExecer interface {
-		Exec(...interface{}) (sql.Result, error)
-		Query(...interface{}) (*sql.Rows, error)
-		Close() error
 	}
 
 	ResultType int
@@ -45,27 +50,27 @@ const (
 )
 
 // Update always returl the count of affected rows
-func Update(exec QueryExecer, err error, args ...interface{}) (int64, error) {
-	return Exec(exec, err, RES_ROWS, args...)
+func Update(stmt Stmt, err error, args ...interface{}) (int64, error) {
+	return Exec(stmt, err, RES_ROWS, args...)
 }
 
 // Exec execute stmt with given arguments and resolve the result if error is nil
-func Exec(exec QueryExecer, err error, typ ResultType, args ...interface{}) (int64, error) {
+func Exec(stmt Stmt, err error, typ ResultType, args ...interface{}) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
 
-	res, err := exec.Exec(args...)
+	res, err := stmt.Exec(args...)
 	return ResolveResult(res, err, typ)
 }
 
 // Query execute the query stmt, error stored in Scanner
-func Query(exec QueryExecer, err error, args ...interface{}) Scanner {
+func Query(stmt Stmt, err error, args ...interface{}) Scanner {
 	if err != nil {
 		return Scanner{Error: err}
 	}
 
-	rows, err := exec.Query(args...)
+	rows, err := stmt.Query(args...)
 	return Scanner{
 		Error: err,
 		Rows:  rows,
@@ -73,26 +78,26 @@ func Query(exec QueryExecer, err error, args ...interface{}) Scanner {
 }
 
 // Update always returl the count of affected rows
-func CloseUpdate(exec QueryExecer, err error, args ...interface{}) (int64, error) {
-	return CloseExec(exec, err, RES_ROWS, args...)
+func CloseUpdate(stmt Stmt, err error, args ...interface{}) (int64, error) {
+	return CloseExec(stmt, err, RES_ROWS, args...)
 }
 
 // Exec execute stmt with given arguments and resolve the result if error is nil
-func CloseExec(exec QueryExecer, err error, typ ResultType, args ...interface{}) (int64, error) {
+func CloseExec(stmt Stmt, err error, typ ResultType, args ...interface{}) (int64, error) {
 	if err == nil {
-		defer exec.Close()
+		defer stmt.Close()
 	}
 
-	return Exec(exec, err, typ, args...)
+	return Exec(stmt, err, typ, args...)
 }
 
 // Query execute the query stmt, error stored in Scanner
-func CloseQuery(exec QueryExecer, err error, args ...interface{}) Scanner {
+func CloseQuery(stmt Stmt, err error, args ...interface{}) Scanner {
 	if err == nil {
-		defer exec.Close()
+		defer stmt.Close()
 	}
 
-	return Query(exec, err, args...)
+	return Query(stmt, err, args...)
 }
 
 // ResolveResult resolve sql result, if need id, return last insert id

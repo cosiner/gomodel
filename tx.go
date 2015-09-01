@@ -9,7 +9,7 @@ type (
 	}
 )
 
-func (tx Tx) Driver() string {
+func (tx Tx) Driver() Driver {
 	return tx.db.Driver()
 }
 
@@ -67,7 +67,7 @@ func (tx Tx) ArgsOne(model Model, fields, whereFields uint64, args []interface{}
 	return scanner.One(ptrs...)
 }
 
-func (tx Tx) Limit(store Store, model Model, fields, whereFields uint64, start, count int) error {
+func (tx Tx) Limit(store Store, model Model, fields, whereFields uint64, start, count int64) error {
 	args := FieldVals(model, whereFields, start, count)
 
 	return tx.ArgsLimit(store, model, fields, whereFields, args...)

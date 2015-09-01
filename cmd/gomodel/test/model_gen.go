@@ -7,7 +7,7 @@ import (
 var DB = gomodel.NewDB()
 
 var (
-	astConv = gomodel.NewSqlId(func(gomodel.Tabler) string {
+	astConv = gomodel.NewSqlId(func(gomodel.Executor) string {
 		return "insert into user_follow(user_id, follow_user_id) select ?, ? from DUAL where exists (select id from user where id = ?)"
 	})
 )
@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	userInstance = &User{}
+	userInstance = new(User)
 )
 
 func (u *User) Table() string {
@@ -168,10 +168,9 @@ func (s *userStore) Realloc(count int) int {
 
 	panic("unexpected capacity of userStore")
 }
-
-func (s *userStore) Clear() {
-	if s.Values != nil {
-		s.Values = s.Values[:0]
+func (a *userStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
 	}
 }
 
@@ -189,7 +188,7 @@ const (
 )
 
 var (
-	followInstance = &Follow{}
+	followInstance = new(Follow)
 )
 
 func (f *Follow) Table() string {
@@ -292,10 +291,9 @@ func (s *followStore) Realloc(count int) int {
 
 	panic("unexpected capacity of followStore")
 }
-
-func (s *followStore) Clear() {
-	if s.Values != nil {
-		s.Values = s.Values[:0]
+func (a *followStore) Clear() {
+	if a.Values != nil {
+		a.Values = a.Values[:0]
 	}
 }
 

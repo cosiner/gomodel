@@ -3,10 +3,9 @@ package dberrs
 
 import (
 	"database/sql"
-	"strings"
 
 	"github.com/cosiner/gohper/errors"
-	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gomodel"
 )
 
 // Only tested for mysql
@@ -15,89 +14,8 @@ const (
 )
 
 type (
-	Driverer interface {
-		Driver() string
-	}
-
-	StringDriver string
-
 	KeyParser func(err error) (key string)
-
-	DriverInfo struct {
-		ForeignKeyParser   KeyParser
-		DuplicateKeyParser KeyParser
-		PrimaryKeyWord     string
-	}
 )
-
-func (s StringDriver) Driver() string {
-	return string(s)
-}
-
-var (
-	driverInfos = map[string]DriverInfo{
-		"mysql": DriverInfo{
-			ForeignKeyParser:   mysqlForeignKey,
-			DuplicateKeyParser: mysqlDuplicateKey,
-			PrimaryKeyWord:     "PRIMARY",
-		},
-	}
-)
-
-func RegisterDriverInfo(driver Driverer, info DriverInfo) {
-	if _, has := driverInfos[driver.Driver()]; has {
-		panic("driver info for " + driver.Driver() + " already registered")
-	}
-	if info.ForeignKeyParser == nil || info.DuplicateKeyParser == nil || info.PrimaryKeyWord == "" {
-		panic("some info for driver " + driver.Driver() + " is lacked ")
-	}
-
-	driverInfos[driver.Driver()] = info
-}
-
-func mysqlDuplicateKey(err error) string {
-	if err == nil {
-		return ""
-	}
-
-	// Duplicate entry ... for key 'keyname'
-	const DUPLICATE = "Duplicate"
-	const FORKEY = "for key"
-
-	s := err.Error()
-	index := strings.Index(s, DUPLICATE)
-	if index < 0 {
-		return ""
-	}
-
-	s = s[index+len(DUPLICATE):]
-	index = strings.Index(s, FORKEY) + len(FORKEY)
-	if index < 0 {
-		return ""
-	}
-
-	s, _ = strings2.TrimQuote(s[index:])
-	return s
-}
-
-func mysqlForeignKey(err error) string {
-	if err == nil {
-		return ""
-	}
-
-	// FOREIGN KEY (`keyname`)
-	const FOREIGNKEY = "FOREIGN KEY "
-
-	s := err.Error()
-	index := strings.Index(s, FOREIGNKEY)
-	if index < 0 {
-		return ""
-	}
-
-	index += len(FOREIGNKEY) + 2
-	s = s[index:]
-	return s[:strings.IndexByte(s, ')')-1]
-}
 
 func parseKeyFunc(err error, keyfunc func(key string) error, getKey KeyParser) error {
 	key := getKey(err)
@@ -121,39 +39,43 @@ func parseKeyError(err error, key string, newErr error, getKey KeyParser) error 
 	}
 
 	if k == key {
+		if newErr == NonError {
+			return nil
+		}
+
 		return newErr
 	}
 
 	panic("unexpected key: " + k + ", expect: " + key)
 }
 
-func DuplicateKeyFunc(driver Driverer, err error, keyfunc func(key string) error) error {
-	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
-	return parseKeyFunc(err, keyfunc, duplicateKey)
+func DuplicateKeyFunc(exec gomodel.Executor, err error, keyfunc func(key string) error) error {
+	dk := exec.Driver().DuplicateKey
+	return parseKeyFunc(err, keyfunc, dk)
 }
 
-func DuplicateKeyError(driver Driverer, err error, key string, newErr error) error {
-	duplicateKey := driverInfos[driver.Driver()].DuplicateKeyParser
-	return parseKeyError(err, key, newErr, duplicateKey)
+func DuplicateKeyError(exec gomodel.Executor, err error, key string, newErr error) error {
+	dk := exec.Driver().DuplicateKey
+	return parseKeyError(err, key, newErr, dk)
 }
 
-func ForeignKeyFunc(driver Driverer, err error, keyfunc func(key string) error) error {
-	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
-	return parseKeyFunc(err, keyfunc, foreignKey)
+func ForeignKeyFunc(exec gomodel.Executor, err error, keyfunc func(key string) error) error {
+	fk := exec.Driver().ForeignKey
+	return parseKeyFunc(err, keyfunc, fk)
 }
 
-func ForeignKeyError(driver Driverer, err error, key string, newErr error) error {
-	foreignKey := driverInfos[driver.Driver()].ForeignKeyParser
-	return parseKeyError(err, key, newErr, foreignKey)
+func ForeignKeyError(exec gomodel.Executor, err error, key string, newErr error) error {
+	fk := exec.Driver().ForeignKey
+	return parseKeyError(err, key, newErr, fk)
 }
 
-func DuplicatePrimaryKeyError(driver Driverer, err error, newErr error) error {
-	info := driverInfos[driver.Driver()]
-	return parseKeyError(err, info.PrimaryKeyWord, newErr, info.DuplicateKeyParser)
+func DuplicatePrimaryKeyError(exec gomodel.Executor, err error, newErr error) error {
+	pk := exec.Driver().PrimaryKey()
+	return parseKeyError(err, pk, newErr, exec.Driver().DuplicateKey)
 }
 
-func PrimaryKey(driver Driverer) string {
-	return driverInfos[driver.Driver()].PrimaryKeyWord
+func PrimaryKey(exec gomodel.Executor) string {
+	return exec.Driver().PrimaryKey()
 }
 
 func NoRows(err, newErr error) error {

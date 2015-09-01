@@ -1,13 +1,18 @@
 // Package gomodel is a library help for interact with database efficiently
 package gomodel
 
-import "database/sql"
+import (
+	"github.com/cosiner/gohper/conv"
+	"github.com/cosiner/gohper/errors"
+
+	"database/sql"
+)
 
 type (
 	// DB holds database connections, store all tables
 	DB struct {
 		*sql.DB
-		driver string
+		driver Driver
 		tables map[string]*Table
 		cache  cache
 
@@ -17,7 +22,7 @@ type (
 )
 
 // Open create a database manager and connect to database server
-func Open(driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
+func Open(driver Driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	db := NewDB()
 	err := db.Connect(driver, dsn, maxIdle, maxOpen)
 
@@ -35,8 +40,8 @@ func NewDB() *DB {
 }
 
 // Connect to database server
-func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
-	db_, err := sql.Open(driver, dsn)
+func (db *DB) Connect(driver Driver, dsn string, maxIdle, maxOpen int) error {
+	db_, err := sql.Open(driver.String(), dsn)
 	if err != nil {
 		return err
 	}
@@ -50,7 +55,7 @@ func (db *DB) Connect(driver, dsn string, maxIdle, maxOpen int) error {
 	return nil
 }
 
-func (db *DB) Driver() string {
+func (db *DB) Driver() Driver {
 	return db.driver
 }
 
@@ -117,7 +122,7 @@ func (db *DB) ArgsOne(model Model, fields, whereFields uint64, args []interface{
 	return scanner.One(ptrs...)
 }
 
-func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start, count int) error {
+func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start, count int64) error {
 	args := FieldVals(model, whereFields, start, count)
 
 	return db.ArgsLimit(store, model, fields, whereFields, args...)
@@ -126,9 +131,18 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start,
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)
+
+	argc := len(args)
+	start, err := conv.IfaceToInt64(args[argc-2])
+	errors.Panicln(err)
+	count, err := conv.IfaceToInt64(args[argc-1])
+	errors.Panicln(err)
+
+	arg1, arg2 := db.driver.ParamLimit(start, count)
+	args[argc-2], args[argc-1] = arg1, arg2
 	scanner := Query(stmt, err, args...)
 
-	return scanner.Limit(store, args[len(args)-1].(int))
+	return scanner.Limit(store, int(count))
 }
 
 func (db *DB) All(store Store, model Model, fields, whereFields uint64) error {

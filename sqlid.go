@@ -1,6 +1,10 @@
 package gomodel
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/cosiner/gohper/bytes2"
+)
 
 var (
 	// InitialSQLCount is the initial capacity of sql storage,
@@ -8,30 +12,31 @@ var (
 	InitialSQLCount uint64 = 256
 )
 
-// Tabler is the storage of model tables
-type Tabler interface {
-	Table(model Model) *Table
-}
+const (
+	_InitialSQLBufsize = 256
+)
 
 type sqlStore struct {
-	sqls []func(Tabler) string
+	sqls []func(Executor) string
 	sync.Mutex
 }
+
+var sqlBufpool = bytes2.NewSyncPool(_InitialSQLBufsize, false)
 
 var store sqlStore
 
 func initSqlStore() {
 	if store.sqls == nil {
-		store.sqls = make([]func(Tabler) string, 0, InitialSQLCount)
+		store.sqls = make([]func(Executor) string, 0, InitialSQLCount)
 	}
 }
 
-func sqlById(tabler Tabler, id uint64) string {
-	return store.sqls[id](tabler)
+func sqlById(executor Executor, id uint64) string {
+	return store.sqls[id](executor)
 }
 
 // NewSqlId create an id for this sql creator used in methods like XXXById
-func NewSqlId(create func(Tabler) string) (id uint64) {
+func NewSqlId(create func(Executor) string) (id uint64) {
 	store.Lock()
 
 	id = uint64(len(store.sqls))

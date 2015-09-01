@@ -30,7 +30,7 @@ func WrapStmt(closeable bool, stmt *sql.Stmt, err error) (Stmt, error) {
 	}
 
 	if closeable {
-		if stmt == nil {
+		if stmt == nil { // avoid nil data becomes non-nil interface
 			return nil, err
 		}
 
