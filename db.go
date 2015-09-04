@@ -2,10 +2,10 @@
 package gomodel
 
 import (
+	"database/sql"
+
 	"github.com/cosiner/gohper/conv"
 	"github.com/cosiner/gohper/errors"
-
-	"database/sql"
 )
 
 type (
@@ -133,6 +133,9 @@ func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, ar
 	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)
 
 	argc := len(args)
+	if argc < 2 {
+		panic(errors.Newf("ArgsLimit need at least two parameters, but only got %d", argc))
+	}
 	start, err := conv.IfaceToInt64(args[argc-2])
 	errors.Panicln(err)
 	count, err := conv.IfaceToInt64(args[argc-1])

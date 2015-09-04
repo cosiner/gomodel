@@ -27,9 +27,14 @@ func (Postgres) DSN(host, port, username, password, dbname string, cfg map[strin
 }
 
 func (Postgres) Prepare(pool bytes2.Pool, sql string) string {
+	const FROM_DUAL = "from dual"
+	index := strings.Index(strings.ToLower(sql), FROM_DUAL)
+	if index >= 0 {
+		sql = sql[:index] + " " + sql[index+len(FROM_DUAL):]
+	}
 	buf := pool.Get(len(sql), false)
 
-	index := 1
+	index = 1
 	for i, l := 0, len(sql); i < l; i++ {
 		if c := sql[i]; c != '?' {
 			buf = append(buf, c)
