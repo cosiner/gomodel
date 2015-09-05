@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
-
 	"github.com/cosiner/gohper/bytes2"
 	"github.com/cosiner/gohper/errors"
 )
 
-func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
+func (v Visitor) modelTable(modelbuf *bytes2.Buffer, table **Table) error {
 	model := modelbuf.String()
 
 	*table = v.Models[model]
@@ -18,7 +16,7 @@ func (v Visitor) modelTable(modelbuf *bytes.Buffer, table **Table) error {
 	return nil
 }
 
-func (v Visitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
+func (v Visitor) writeModel(sqlbuf, modelbuf *bytes2.Buffer) error {
 	var table *Table
 
 	err := v.modelTable(modelbuf, &table)
@@ -29,7 +27,7 @@ func (v Visitor) writeModel(sqlbuf, modelbuf *bytes.Buffer) error {
 	return err
 }
 
-func (v Visitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fieldbuf *bytes.Buffer) error {
+func (v Visitor) writeField(table *Table, withModel bool, sqlbuf, modelbuf, fieldbuf *bytes2.Buffer) error {
 	field := fieldbuf.String()
 	col := table.Fields.Get(field)
 	if col == nil {
@@ -56,9 +54,9 @@ func (v Visitor) conv(sql string) (s string, err error) {
 	)
 
 	state := INIT
-	sqlbuf := bytes2.NewBuffer(len(sql))
-	modelbuf := bytes2.NewBuffer(8)
-	fieldbuf := bytes2.NewBuffer(8)
+	sqlbuf := bytes2.MakeBuffer(0, len(sql))
+	modelbuf := bytes2.MakeBuffer(0, 8)
+	fieldbuf := bytes2.MakeBuffer(0, 8)
 
 	var table *Table
 	var withModel bool
