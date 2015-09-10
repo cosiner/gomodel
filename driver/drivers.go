@@ -14,11 +14,6 @@ func Register(name string, driver gomodel.Driver) bool {
 	return !has
 }
 
-func init() {
-	Register("mysql", MySQL("mysql"))
-	Register("postgres", Postgres("postgres"))
-}
-
 func Get(name string) gomodel.Driver {
 	return drivers[name]
 }

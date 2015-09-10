@@ -1,10 +1,6 @@
 package gomodel
 
-import (
-	"sync"
-
-	"github.com/cosiner/gohper/bytes2"
-)
+import "sync"
 
 var (
 	// InitialSQLCount is the initial capacity of sql storage,
@@ -20,8 +16,6 @@ type sqlStore struct {
 	sqls []func(Executor) string
 	sync.Mutex
 }
-
-var sqlBufpool = bytes2.NewSyncPool(_InitialSQLBufsize, false)
 
 var store sqlStore
 

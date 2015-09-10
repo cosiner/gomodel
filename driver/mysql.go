@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cosiner/gohper/bytes2"
 	"github.com/cosiner/gohper/strings2"
 )
 
@@ -14,6 +13,10 @@ func (m MySQL) String() string {
 	return string(m)
 }
 
+func init() {
+	Register("mysql", MySQL("mysql"))
+}
+
 func (MySQL) DSN(host, port, username, password, dbname string, cfg map[string]string) string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s",
 		username,
@@ -21,11 +24,11 @@ func (MySQL) DSN(host, port, username, password, dbname string, cfg map[string]s
 		host,
 		port,
 		dbname,
-		strings2.JoinKVs(cfg, "=", "&"),
+		strings2.JoinPairs(cfg, "=", "&"),
 	)
 }
 
-func (MySQL) Prepare(pool bytes2.Pool, sql string) string {
+func (MySQL) Prepare(sql string) string {
 	return sql
 }
 

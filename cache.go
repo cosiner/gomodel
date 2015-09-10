@@ -25,10 +25,9 @@ func (c cache) StmtById(exec Executor, sqlid uint64) (*sql.Stmt, error) {
 
 		return item.stmt, nil
 	}
-
 	sql_ := sqlById(exec, sqlid)
-	sql_ = exec.Driver().Prepare(sqlBufpool, sql_)
 	sqlPrinter.Print(false, sql_)
+	sql_ = exec.Driver().Prepare(sql_)
 
 	stmt, err := exec.Prepare(sql_)
 	if err != nil {
@@ -47,7 +46,7 @@ func (c cache) GetStmt(exec Executor, sqlid uint64) (string, *sql.Stmt, error) {
 	}
 	var err error
 	if item.stmt == nil {
-		item.sql = exec.Driver().Prepare(sqlBufpool, item.sql)
+		item.sql = exec.Driver().Prepare(item.sql)
 		item.stmt, err = exec.Prepare(item.sql)
 	}
 
@@ -56,7 +55,7 @@ func (c cache) GetStmt(exec Executor, sqlid uint64) (string, *sql.Stmt, error) {
 
 // SetStmt exec a sql to statement, cache then return it
 func (c cache) SetStmt(exec Executor, sqlid uint64, sql string) (*sql.Stmt, error) {
-	sql = exec.Driver().Prepare(sqlBufpool, sql)
+	sql = exec.Driver().Prepare(sql)
 	stmt, err := exec.Prepare(sql)
 	if err != nil {
 		return nil, err
@@ -72,7 +71,7 @@ func (c cache) SetStmt(exec Executor, sqlid uint64, sql string) (*sql.Stmt, erro
 func (c cache) PrepareById(exec Executor, sqlid uint64) (*sql.Stmt, error) {
 	item, has := c[sqlid]
 	if !has {
-		item.sql = exec.Driver().Prepare(sqlBufpool, sqlById(exec, sqlid))
+		item.sql = exec.Driver().Prepare(sqlById(exec, sqlid))
 		c[sqlid] = item
 	}
 	sqlPrinter.Print(has, item.sql)
@@ -87,7 +86,7 @@ func (c cache) PrepareSQL(exec Executor, sqlid uint64) (string, *sql.Stmt, error
 		return "", nil, nil
 	}
 
-	item.sql = exec.Driver().Prepare(sqlBufpool, item.sql)
+	item.sql = exec.Driver().Prepare(item.sql)
 	stmt, err := exec.Prepare(item.sql)
 	return item.sql, stmt, err
 }
