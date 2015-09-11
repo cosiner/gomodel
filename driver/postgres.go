@@ -34,11 +34,11 @@ func (Postgres) Prepare(sql string) string {
 	sql = strings.ToLower(sql)
 	replacer := strings.NewReplacer(
 		"from dual", "",
-		"LIMIT ?, ?", "limit ? offset ?",
-		"LIMIT ?,?", "limit ? offset ?",
+		"limit ?, ?", "limit ? offset ?",
+		"limit ?,?", "limit ? offset ?",
 	)
-
 	sql = replacer.Replace(sql)
+
 	buf := make([]byte, 0, len(sql))
 	index := 1
 	for i, l := 0, len(sql); i < l; i++ {

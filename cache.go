@@ -26,8 +26,8 @@ func (c cache) StmtById(exec Executor, sqlid uint64) (*sql.Stmt, error) {
 		return item.stmt, nil
 	}
 	sql_ := sqlById(exec, sqlid)
-	sqlPrinter.Print(false, sql_)
 	sql_ = exec.Driver().Prepare(sql_)
+	sqlPrinter.Print(false, sql_)
 
 	stmt, err := exec.Prepare(sql_)
 	if err != nil {
