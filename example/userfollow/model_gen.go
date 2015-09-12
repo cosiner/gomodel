@@ -110,16 +110,16 @@ func (u *User) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (u *User) txDo(db *gomodel.DB, do func(gomodel.Tx, *User) error) (err error) {
+func (u *User) txDo(db *gomodel.DB, do func(*gomodel.Tx, *User) error) error {
 	tx, err := db.Begin()
 	if err != nil {
-		return
+		return err
 	}
-
-	defer tx.DeferDone(&err)
+	defer tx.Close()
 
 	err = do(tx, u)
-	return
+	tx.Success(err == nil)
+	return err
 }
 
 type (
@@ -233,16 +233,16 @@ func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (f *Follow) txDo(db *gomodel.DB, do func(gomodel.Tx, *Follow) error) (err error) {
+func (f *Follow) txDo(db *gomodel.DB, do func(*gomodel.Tx, *Follow) error) error {
 	tx, err := db.Begin()
 	if err != nil {
-		return
+		return err
 	}
-
-	defer tx.DeferDone(&err)
+	defer tx.Close()
 
 	err = do(tx, f)
-	return
+	tx.Success(err == nil)
+	return err
 }
 
 type (

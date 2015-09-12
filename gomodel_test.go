@@ -36,5 +36,5 @@ func TestCols(t *testing.T) {
 
 func TestInterface(t *testing.T) {
 	var _ Executor = &DB{}
-	var _ Executor = Tx{}
+	var _ Executor = &Tx{}
 }

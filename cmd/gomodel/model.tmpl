@@ -72,16 +72,16 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     }
 }
 
-func {{$recv}} txDo(db *gomodel.DB, do func(gomodel.Tx, *{{$normal}}) error) (err error) {
+func {{$recv}} txDo(db *gomodel.DB, do func(*gomodel.Tx, *{{$normal}}) error) error {
     tx, err := db.Begin()
     if err != nil {
-        return
+        return err
     }
-
-    defer tx.DeferDone(&err)
+    defer tx.Close()
 
     err = do(tx, {{$self}})
-    return
+    tx.Success(err == nil)
+    return err
 }
 
 type (

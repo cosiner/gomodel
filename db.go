@@ -29,7 +29,7 @@ func Open(driver Driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 	return db, err
 }
 
-// New create a new DB instance
+// NewDB create a new DB instance
 func NewDB() *DB {
 	initSqlStore()
 
@@ -218,30 +218,30 @@ func (db *DB) QueryById(sqlid uint64, args ...interface{}) Scanner {
 	return Query(stmt, err, args...)
 }
 
-var emptyTX = Tx{}
+var emptyTX = &Tx{}
 
-func (db *DB) Begin() (Tx, error) {
+func (db *DB) Begin() (*Tx, error) {
 	tx, err := db.DB.Begin()
 	if err != nil {
 		return emptyTX, err
 	}
 
-	return Tx{
+	return &Tx{
 		Tx: tx,
 		db: db,
 	}, nil
 }
 
-func (db *DB) TxDo(do func(Tx) error) (err error) {
+func (db *DB) TxDo(do func(*Tx) error) error {
 	tx, err := db.Begin()
 	if err != nil {
-		return
+		return err
 	}
-
-	defer tx.DeferDone(&err)
+	defer tx.Close()
 
 	err = do(tx)
-	return
+	tx.Success(err == nil)
+	return err
 }
 
 func (db *DB) StmtById(sqlid uint64) (Stmt, error) {
