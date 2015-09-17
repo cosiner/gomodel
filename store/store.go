@@ -137,13 +137,13 @@ func (s *KVs) Init(size int) {
 		s.Keys = make([]string, size)
 		s.Values = make([]string, size)
 	} else {
-		s.Keys = s.Values[:size]
+		s.Keys = s.Keys[:size]
 		s.Values = s.Values[:size]
 	}
 }
 
 func (s *KVs) Final(size int) {
-	s.Keys = s.Values[:size]
+	s.Keys = s.Keys[:size]
 	s.Values = s.Values[:size]
 }
 
