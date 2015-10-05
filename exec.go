@@ -91,15 +91,6 @@ func CloseExec(stmt Stmt, err error, typ ResultType, args ...interface{}) (int64
 	return Exec(stmt, err, typ, args...)
 }
 
-// Query execute the query stmt, error stored in Scanner
-func CloseQuery(stmt Stmt, err error, args ...interface{}) Scanner {
-	if err == nil {
-		defer stmt.Close()
-	}
-
-	return Query(stmt, err, args...)
-}
-
 // ResolveResult resolve sql result, if need id, return last insert id
 // else return affected rows count
 func ResolveResult(res sql.Result, err error, typ ResultType) (int64, error) {
