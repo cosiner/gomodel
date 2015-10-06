@@ -49,7 +49,10 @@ func (t *Table) Stmt(exec Executor, sqlType SQLType, fields, whereFields uint64,
 		sql_ = build(exec.Driver(), fields, whereFields)
 		sqlPrinter.Print(false, sql_)
 
-		return t.cache.SetStmt(exec, id, sql_)
+		stmt, err =  t.cache.SetStmt(exec, id, sql_)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	sqlPrinter.Print(true, sql_)
@@ -70,7 +73,8 @@ func (t *Table) StmtDelete(exec Executor, whereFields uint64) (Stmt, error) {
 }
 
 func (t *Table) StmtLimit(exec Executor, fields, whereFields uint64) (Stmt, error) {
-	return t.Stmt(exec, LIMIT, fields, whereFields, t.SQLLimit)
+	stmt, err := t.Stmt(exec, LIMIT, fields, whereFields, t.SQLLimit)
+	return stmt, err
 }
 
 func (t *Table) StmtOne(exec Executor, fields, whereFields uint64) (Stmt, error) {

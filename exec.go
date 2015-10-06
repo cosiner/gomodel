@@ -69,11 +69,11 @@ func Query(stmt Stmt, err error, args ...interface{}) Scanner {
 	if err != nil {
 		return Scanner{Error: err}
 	}
-
 	rows, err := stmt.Query(args...)
 	return Scanner{
 		Error: err,
 		Rows:  rows,
+		Stmt:  stmt,
 	}
 }
 

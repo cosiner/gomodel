@@ -115,6 +115,7 @@ func (db *DB) One(model Model, fields, whereFields uint64) error {
 func (db *DB) ArgsOne(model Model, fields, whereFields uint64, args []interface{}, ptrs ...interface{}) error {
 	stmt, err := db.Table(model).StmtOne(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	if len(ptrs) == 0 {
 		ptrs = FieldPtrs(model, fields)
@@ -130,8 +131,6 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start,
 
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
-	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)
-
 	argc := len(args)
 	if argc < 2 {
 		panic(errors.Newf("ArgsLimit need at least two parameters, but only got %d", argc))
@@ -143,7 +142,10 @@ func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, ar
 
 	arg1, arg2 := db.driver.ParamLimit(start, count)
 	args[argc-2], args[argc-1] = arg1, arg2
+
+	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	return scanner.Limit(store, int(count))
 }
@@ -155,6 +157,7 @@ func (db *DB) All(store Store, model Model, fields, whereFields uint64) error {
 func (db *DB) ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	stmt, err := db.Table(model).StmtAll(db, fields, whereFields)
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	return scanner.All(store, db.InitialModels)
 }
@@ -170,6 +173,7 @@ func (db *DB) ArgsCount(model Model, whereFields uint64, args ...interface{}) (c
 
 	stmt, err := t.StmtCount(db, whereFields)
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	err = scanner.One(&count)
 

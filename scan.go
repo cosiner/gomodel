@@ -29,8 +29,18 @@ type (
 	Scanner struct {
 		Error error
 		Rows  *sql.Rows
+		Stmt  Stmt
 	}
 )
+
+func (sc Scanner) Close() {
+	stmt := sc.Stmt
+	sc.Stmt = nil
+
+	if stmt != nil {
+		stmt.Close()
+	}
+}
 
 func _rowCount(c int) int {
 	const DEFAULT_ROW_COUNT = 10

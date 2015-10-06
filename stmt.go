@@ -1,8 +1,6 @@
 package gomodel
 
-import (
-	"database/sql"
-)
+import "database/sql"
 
 type Stmt interface {
 	Exec(...interface{}) (sql.Result, error)

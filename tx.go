@@ -61,6 +61,7 @@ func (tx *Tx) One(model Model, fields, whereFields uint64) error {
 func (tx *Tx) ArgsOne(model Model, fields, whereFields uint64, args []interface{}, ptrs ...interface{}) error {
 	stmt, err := tx.Table(model).PrepareOne(tx, fields, whereFields)
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	if len(ptrs) == 0 {
 		ptrs = FieldPtrs(model, fields)
@@ -77,10 +78,8 @@ func (tx *Tx) Limit(store Store, model Model, fields, whereFields uint64, start,
 // The last two arguments must be "start" and "count" of limition with type "int"
 func (tx *Tx) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	stmt, err := tx.Table(model).PrepareLimit(tx, fields, whereFields)
-	if err == nil {
-		defer stmt.Close()
-	}
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	return scanner.Limit(store, args[len(args)-1].(int))
 }
@@ -92,10 +91,8 @@ func (tx *Tx) All(store Store, model Model, fields, whereFields uint64) error {
 // ArgsAll select all rows, the last two argument must be "start" and "count"
 func (tx *Tx) ArgsAll(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	stmt, err := tx.Table(model).PrepareAll(tx, fields, whereFields)
-	if err == nil {
-		defer stmt.Close()
-	}
 	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
 
 	return scanner.All(store, tx.db.InitialModels)
 }
@@ -109,11 +106,8 @@ func (tx *Tx) Count(model Model, whereFields uint64) (count int64, err error) {
 func (tx *Tx) ArgsCount(model Model, whereFields uint64,
 	args ...interface{}) (count int64, err error) {
 	stmt, err := tx.Table(model).PrepareCount(tx, whereFields)
-	if err == nil {
-		defer stmt.Close()
-	}
 	scanner := Query(stmt, err, args...)
-
+	defer scanner.Close()
 	err = scanner.One(&count)
 
 	return
@@ -159,9 +153,7 @@ func (tx *Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
 
 func (tx *Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
 	stmt, err := tx.PrepareById(sqlid)
-	if err == nil {
-		defer stmt.Close()
-	}
+
 	return Query(stmt, err, args...)
 }
 

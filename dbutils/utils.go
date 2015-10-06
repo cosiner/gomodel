@@ -12,8 +12,8 @@ import (
 
 func QueryOneResultById(exec gomodel.Executor, sqlid uint64, ptr interface{}, args ...interface{}) error {
 	sc := exec.QueryById(sqlid, args...)
-	err := sc.One(ptr)
-	return err
+	defer sc.Close()
+	return  sc.One(ptr)
 }
 
 func QueryCountById(exec gomodel.Executor, sqlid uint64, args ...interface{}) (int64, error) {

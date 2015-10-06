@@ -1,8 +1,6 @@
 package gomodel
 
-import (
-	"database/sql"
-)
+import "database/sql"
 
 type (
 	// cacheItem keeps the sql and prepared statement of it
