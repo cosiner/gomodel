@@ -82,8 +82,7 @@ func (s *Section) Inspect(node sqlparser.SQLNode) {
 			case *sqlparser.TableName:
 				table = s.AddTableName(string(node.As), tab)
 			case *sqlparser.Subquery:
-				table = string(node.As)
-				s.AddSubquery(table).Inspect(tab)
+				s.AddSubquery(string(node.As)).Inspect(tab)
 			}
 
 			return false // stop inspect subnodes
