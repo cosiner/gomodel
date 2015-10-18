@@ -49,13 +49,13 @@ func (t *Table) Stmt(exec Executor, sqlType SQLType, fields, whereFields uint64,
 		sql_ = build(exec.Driver(), fields, whereFields)
 		sqlPrinter.Print(false, sql_)
 
-		stmt, err =  t.cache.SetStmt(exec, id, sql_)
+		stmt, err = t.cache.SetStmt(exec, id, sql_)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		sqlPrinter.Print(true, sql_)
 	}
-
-	sqlPrinter.Print(true, sql_)
 
 	return WrapStmt(STMT_NOPCLOSE, stmt, nil)
 }
@@ -351,7 +351,7 @@ func parseModel(v Model, db *DB) *Table {
 
 	return newTable(
 		v.Table(),
-		slices.FitCapToLenString(cols),
+		slices.Strings(cols).FitCapToLen().Strings(),
 		nocache,
 	)
 }

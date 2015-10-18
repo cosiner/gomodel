@@ -91,7 +91,7 @@ func main() {
 				sql, err = v.conv(sql)
 			}
 			if err != nil {
-				color.LightRed.Errorf("%s: %s\n", name, err)
+				color.Red.Errorf("%s: %s\n", name, err)
 			} else {
 				v.SQLs[name] = sql
 			}

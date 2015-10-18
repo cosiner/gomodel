@@ -13,7 +13,7 @@ import (
 func QueryOneResultById(exec gomodel.Executor, sqlid uint64, ptr interface{}, args ...interface{}) error {
 	sc := exec.QueryById(sqlid, args...)
 	defer sc.Close()
-	return  sc.One(ptr)
+	return sc.One(ptr)
 }
 
 func QueryCountById(exec gomodel.Executor, sqlid uint64, args ...interface{}) (int64, error) {
@@ -54,7 +54,7 @@ func (opt CondOption) CondArgs() (uint64, []interface{}) {
 		if usable {
 			otherFields |= condField
 		} else {
-			args = slices.RemoveElement(args, index)
+			args = slices.Interfaces(args).Remove(index).Interfaces()
 			skipped++
 		}
 	}
