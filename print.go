@@ -7,7 +7,7 @@ type SQLPrinter func(string, ...interface{})
 var sqlPrinter SQLPrinter = func(string, ...interface{}) {}
 
 func (p SQLPrinter) Print(fromcache bool, sql string) {
-	p("Cached: %t, SQL: %s\n", fromcache, sql)
+	p("Cached: %t, SQL: %s", fromcache, sql)
 }
 
 // SQLPrint enable sql print for each operation
