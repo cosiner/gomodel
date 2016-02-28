@@ -46,7 +46,9 @@ func (t *Table) Stmt(exec Executor, sqlType SQLType, fields, whereFields uint64,
 	}
 
 	if stmt == nil {
-		sql_ = build(exec.Driver(), fields, whereFields)
+		dri := exec.Driver()
+		sql_ = build(dri, fields, whereFields)
+		sql_ = dri.Prepare(sql_)
 		sqlPrinter.Print(false, sql_)
 
 		stmt, err = t.cache.SetStmt(exec, id, sql_)
@@ -93,7 +95,6 @@ func (t *Table) StmtIncrBy(exec Executor, field, whereFields uint64) (Stmt, erro
 	return t.Stmt(exec, INCRBY, field, whereFields, t.SQLIncrBy)
 }
 
-// Stmt get sql from cache container, if cache not exist, then create new
 func (t *Table) Prepare(exec Executor, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (Stmt, error) {
 	id := FieldsIdentity(sqlType, t.NumFields, fields, whereFields)
 
@@ -103,10 +104,12 @@ func (t *Table) Prepare(exec Executor, sqlType SQLType, fields, whereFields uint
 	}
 
 	if stmt == nil {
-		sql_ = build(exec.Driver(), fields, whereFields)
+		dri := exec.Driver()
+		sql_ = build(dri, fields, whereFields)
+		sql_ = dri.Prepare(sql_)
+
 		t.cache.SetSQL(id, sql_)
 		sqlPrinter.Print(false, sql_)
-
 		stmt, err = exec.Prepare(sql_)
 	} else {
 		sqlPrinter.Print(true, sql_)
