@@ -30,12 +30,16 @@ func (Postgres) DSN(host, port, username, password, dbname string, cfg map[strin
 	)
 }
 
-func (Postgres) Prepare(sql string) string {
+func (p Postgres) Prepare(sql string) string {
 	sql = strings.ToLower(sql)
+	l := p.SQLLimit()
 	replacer := strings.NewReplacer(
 		"from dual", "",
-		"limit ?, ?", "limit ? offset ?",
-		"limit ?,?", "limit ? offset ?",
+		"FROM DUAL", "",
+		"limit ?, ?", l,
+		"LIMIT ?, ?", l,
+		"limit ?,?", l,
+		"LIMIT ?,?", l,
 	)
 	sql = replacer.Replace(sql)
 
@@ -57,8 +61,8 @@ func (Postgres) SQLLimit() string {
 	return "LIMIT ? OFFSET ?"
 }
 
-func (Postgres) ParamLimit(start, count int64) (int64, int64) {
-	return count, start
+func (Postgres) ParamLimit(offset, count int) (int, int) {
+	return count, offset
 }
 
 func (Postgres) PrimaryKey() string {

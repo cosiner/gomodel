@@ -135,12 +135,12 @@ func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, ar
 	if argc < 2 {
 		panic(errors.Newf("ArgsLimit need at least two parameters, but only got %d", argc))
 	}
-	start, err := conv.IfaceToInt64(args[argc-2])
+	offset, err := conv.IfaceToInt(args[argc-2])
 	errors.Panicln(err)
-	count, err := conv.IfaceToInt64(args[argc-1])
+	count, err := conv.IfaceToInt(args[argc-1])
 	errors.Panicln(err)
 
-	arg1, arg2 := db.driver.ParamLimit(start, count)
+	arg1, arg2 := db.driver.ParamLimit(offset, count)
 	args[argc-2], args[argc-1] = arg1, arg2
 
 	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)

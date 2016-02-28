@@ -94,7 +94,7 @@ func (s *Section) Inspect(node sqlparser.SQLNode) {
 	})
 }
 
-func (s *Section) modelTable2(v Visitor, tab *sqlparser.TableName) (*Table, error) {
+func (s *Section) modelTable(v Visitor, tab *sqlparser.TableName) (*Table, error) {
 	tabname := string(tab.Name)
 	model := v.Models[tabname]
 	if model == nil {
@@ -117,7 +117,7 @@ func (s *Section) replace(v Visitor) error {
 			continue
 		}
 
-		model, err := s.modelTable2(v, tabnode.Table)
+		model, err := s.modelTable(v, tabnode.Table)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func (s *Section) replace(v Visitor) error {
 					continue
 				}
 
-				model, err := s.modelTable2(v, tabnode.Table)
+				model, err := s.modelTable(v, tabnode.Table)
 				if err != nil {
 					return err
 				}

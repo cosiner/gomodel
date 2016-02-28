@@ -36,8 +36,8 @@ func (MySQL) SQLLimit() string {
 	return "LIMIT ?, ?"
 }
 
-func (MySQL) ParamLimit(start, count int64) (int64, int64) {
-	return start, count
+func (MySQL) ParamLimit(offset, count int) (int, int) {
+	return offset, count
 }
 
 func (MySQL) PrimaryKey() string {
