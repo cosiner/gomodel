@@ -73,11 +73,22 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
 }
 
 func {{$recv}} txDo(db *gomodel.DB, do func(*gomodel.Tx, *{{$normal}}) error) error {
-    tx, err := db.Begin()
-    if err != nil {
-        return err
+    var (
+        tx *gomodel.Tx
+        err error
+    )
+    switch r := exec.(type) {
+    case *gomodel.Tx:
+        tx = r
+    case *gomodel.DB:
+        tx, err = r.Begin()
+        if err != nil {
+            return err
+        }
+        defer tx.Close()
+    default:
+        panic("unexpected underlay type of gomodel.Executor")
     }
-    defer tx.Close()
 
     err = do(tx, {{$self}})
     tx.Success(err == nil)

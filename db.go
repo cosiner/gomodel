@@ -230,10 +230,7 @@ func (db *DB) Begin() (*Tx, error) {
 		return emptyTX, err
 	}
 
-	return &Tx{
-		Tx: tx,
-		db: db,
-	}, nil
+	return newTx(tx, db), nil
 }
 
 func (db *DB) TxDo(do func(*Tx) error) error {

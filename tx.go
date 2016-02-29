@@ -10,6 +10,14 @@ type (
 	}
 )
 
+func newTx(tx *sql.Tx, db *DB) *Tx {
+	return &Tx{
+		Tx:        tx,
+		db:        db,
+		isSuccess: true,
+	}
+}
+
 func (tx *Tx) Driver() Driver {
 	return tx.db.Driver()
 }
@@ -193,7 +201,7 @@ func (tx *Tx) Close() error {
 }
 
 func (tx *Tx) Success(success bool) {
-	tx.isSuccess = success
+	tx.isSuccess = tx.isSuccess && success
 }
 
 func (tx *Tx) PrepareById(sqlid uint64) (Stmt, error) {
