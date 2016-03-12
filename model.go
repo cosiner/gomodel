@@ -42,14 +42,14 @@ var (
 
 // NumFieldsExcp create fieldset except given fields
 func NumFieldsExcp(numField uint64, fields ...uint64) uint64 {
-	return AllFieldsExcp(1<<numField - 1, fields...)
+	return AllFieldsExcp(1<<numField-1, fields...)
 }
 
 // AllFieldsExcp create fieldset except given fields
 func AllFieldsExcp(allFields uint64, fields ...uint64) uint64 {
 	var f uint64
 	for _, field := range fields {
-		f  |= field
+		f |= field
 	}
 	return allFields & (^f)
 }

@@ -194,18 +194,6 @@ func (db *DB) ArgsIncrBy(model Model, field, whereFields uint64, args ...interfa
 	return Update(stmt, err, args...)
 }
 
-// ExecUpdate execute a update operation, return resolved result
-func (db *DB) ExecUpdate(sql string, args ...interface{}) (int64, error) {
-	return db.Exec(sql, RES_ROWS, args...)
-}
-
-// Exec execute a update operation, return resolved result
-func (db *DB) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
-	res, err := db.DB.Exec(sql, args...)
-
-	return ResolveResult(res, err, resType)
-}
-
 func (db *DB) ExecById(sqlid uint64, resTyp ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.StmtById(sqlid)
 
@@ -220,6 +208,25 @@ func (db *DB) QueryById(sqlid uint64, args ...interface{}) Scanner {
 	stmt, err := db.StmtById(sqlid)
 
 	return Query(stmt, err, args...)
+}
+
+func (db *DB) prepare(sql string) (Stmt, error) {
+	stmt, err := db.DB.Prepare(sql)
+	return WrapStmt(true, stmt, err)
+}
+
+func (db *DB) Query(sql string, args ...interface{}) Scanner {
+	stmt, err := db.prepare(sql)
+	return Query(stmt, err, args...)
+}
+
+func (db *DB) Exec(sql string, resTyp ResultType, args ...interface{}) (int64, error) {
+	stmt, err := db.prepare(sql)
+	return CloseExec(stmt, err, resTyp, args...)
+}
+
+func (db *DB) ExecUpdate(sql string, args ...interface{}) (int64, error) {
+	return db.Exec(sql, RES_ROWS, args...)
 }
 
 var emptyTX = &Tx{}

@@ -7,7 +7,7 @@ type Driver interface {
 	// for postgresql it's '$n'
 	Prepare(sql string) string
 	SQLLimit() string
-	ParamLimit(offset, count  int) (int, int)
+	ParamLimit(offset, count int) (int, int)
 	PrimaryKey() string
 	DuplicateKey(err error) string
 	ForeignKey(err error) string

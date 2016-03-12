@@ -61,6 +61,7 @@ func (sc Scanner) multiple(s Store, count int, scanType bool) error {
 	if sc.Error != nil {
 		return sc.Error
 	}
+	defer sc.Close()
 
 	var (
 		index int
@@ -113,6 +114,7 @@ func (sc Scanner) One(ptrs ...interface{}) error {
 	if sc.Error != nil {
 		return sc.Error
 	}
+	defer sc.Close()
 
 	rows := sc.Rows
 	defer rows.Close()

@@ -135,16 +135,10 @@ func (tx *Tx) ArgsIncrBy(model Model, field, whereFields uint64, args ...interfa
 	return CloseUpdate(stmt, err, args...)
 }
 
-// ExecUpdate execute a update operation, return resolved result
-func (tx *Tx) ExecUpdate(sql string, args ...interface{}) (int64, error) {
-	return tx.Exec(sql, RES_ROWS, args...)
-}
+func (tx *Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
+	stmt, err := tx.PrepareById(sqlid)
 
-// Exec execute a update operation, return resolved result
-func (tx *Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
-	res, err := tx.Tx.Exec(sql, args...)
-
-	return ResolveResult(res, err, resType)
+	return Query(stmt, err, args...)
 }
 
 // ExecById execute a update operation, return rows affected
@@ -159,10 +153,23 @@ func (tx *Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
 	return tx.ExecById(sqlid, RES_ROWS, args...)
 }
 
-func (tx *Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
-	stmt, err := tx.PrepareById(sqlid)
+func (tx *Tx) prepare(sql string) (Stmt, error) {
+	stmt, err := tx.Tx.Prepare(sql)
+	return WrapStmt(true, stmt, err)
+}
 
-	return Query(stmt, err, args...)
+func (tx *Tx) Query(sql string, args ...interface{}) Scanner {
+	stmt, err := tx.prepare(sql)
+	return Query(stmt, err)
+}
+
+func (tx *Tx) Exec(sql string, resType ResultType, args ...interface{}) (int64, error) {
+	stmt, err := tx.prepare(sql)
+	return CloseExec(stmt, err, resType, args...)
+}
+
+func (tx *Tx) ExecUpdate(sql string, args ...interface{}) (int64, error) {
+	return tx.Exec(sql, RES_ROWS, args...)
 }
 
 // Done check if error is nil then commit transaction, otherwise rollback.
