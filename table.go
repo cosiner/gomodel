@@ -295,11 +295,11 @@ func (t *Table) cols(fields uint64, prefix string) Cols {
 			}
 		}
 
-		return &cols{cols: names}
+		return &MultipleCols{Cols: names}
 	} else if colCount == 1 {
 		for i, l := uint64(0), uint64(len(fieldNames)); i < l; i++ {
 			if (1<<i)&fields != 0 {
-				return singleCol(prefix + fieldNames[i])
+				return SingleCol(prefix + fieldNames[i])
 			}
 		}
 	}

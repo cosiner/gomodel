@@ -1,6 +1,10 @@
 package gomodel
 
-import "github.com/cosiner/gohper/slices"
+import (
+	"strings"
+
+	"github.com/cosiner/gohper/slices"
+)
 
 type (
 	Cols interface {
@@ -24,72 +28,74 @@ type (
 		Length() int
 	}
 
-	// cols used for columns more than two
-	cols struct {
-		cols        []string
+	// MultipleCols used for columns more than two
+	MultipleCols struct {
+		Cols        []string
 		str         string
 		paramed     string
 		onlyParamed string
 	}
 
 	// singleCol means only one column
-	singleCol string
+	SingleCol string
 
 	// emptyCols means there is no columns
 	emptyCols string
+
+	ColNum int
 )
 
 const _emptyCols = emptyCols("")
 
-func (c *cols) String() string {
+func (c *MultipleCols) String() string {
 	if c.str == "" {
-		c.str = slices.Strings(c.cols).Join("", ",")
+		c.str = strings.Join(c.Cols, ",")
 	}
 
 	return c.str
 }
 
-func (c *cols) Paramed() string {
+func (c *MultipleCols) Paramed() string {
 	if c.paramed == "" {
-		c.paramed = slices.Strings(c.cols).Join("=?", ",")
+		c.paramed = slices.Strings(c.Cols).Join("=?", ",")
 	}
 
 	return c.paramed
 }
 
-func (c *cols) OnlyParam() string {
+func (c *MultipleCols) OnlyParam() string {
 	if c.onlyParamed == "" {
-		c.onlyParamed = slices.MakeStrings("?", len(c.cols)).Join("", ",")
+		c.onlyParamed = slices.MakeStrings("?", len(c.Cols)).Join("", ",")
 	}
 
 	return c.onlyParamed
 }
 
-func (c *cols) Join(suffix, sep string) string {
-	return slices.Strings(c.cols).Join(suffix, sep)
+func (c *MultipleCols) Join(suffix, sep string) string {
+	return slices.Strings(c.Cols).Join(suffix, sep)
 }
 
-func (c *cols) Length() int {
-	return len(c.cols)
+func (c *MultipleCols) Length() int {
+	return len(c.Cols)
 }
 
-func (c singleCol) String() string {
+func (c SingleCol) String() string {
 	return string(c)
 }
 
-func (c singleCol) Paramed() string {
+func (c SingleCol) Paramed() string {
 	return string(c) + "=?"
 }
 
-func (c singleCol) OnlyParam() string {
+func (c SingleCol) OnlyParam() string {
 	return "?"
 }
 
-func (c singleCol) Join(suffix, _ string) string {
+func (c SingleCol) Join(suffix, _ string) string {
 	return string(c) + suffix
 }
 
-func (c singleCol) Length() int {
+func (c SingleCol) Length() int {
 	return 1
 }
 
@@ -111,4 +117,20 @@ func (emptyCols) Join(_, _ string) string {
 
 func (emptyCols) Length() int {
 	return 0
+}
+
+func (n ColNum) Length() int {
+	return int(n)
+}
+
+func (n ColNum) OnlyParam() string {
+	return slices.MakeStrings("?", int(n)).Join("", ",")
+}
+
+func (n ColNum) Paramed(cols []string) string {
+	return slices.Strings(cols).Join("=?", ",")
+}
+
+func (n ColNum) String(cols []string) string {
+	return strings.Join(cols, ",")
 }
