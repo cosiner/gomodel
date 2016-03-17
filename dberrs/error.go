@@ -42,7 +42,6 @@ func parseKeyError(err error, key string, newErr error, getKey KeyParser) error 
 		if newErr == NonError {
 			return nil
 		}
-
 		return newErr
 	}
 

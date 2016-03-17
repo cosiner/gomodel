@@ -11,12 +11,16 @@ import (
 
 type Postgres string
 
+func NewPostgres(name string) Postgres {
+	return Postgres(name)
+}
+
 func (p Postgres) String() string {
 	return string(p)
 }
 
 func init() {
-	Register("postgres", Postgres("postgres"))
+	Register("postgres", NewPostgres("postgres"))
 }
 
 func (Postgres) DSN(host, port, username, password, dbname string, cfg map[string]string) string {
@@ -84,7 +88,7 @@ func (p Postgres) pgKey(errCode pq.ErrorCode, err error) string {
 		return ""
 	}
 	e, is := err.(*pq.Error)
-	if !is {
+	if !is || e.Code != errCode {
 		return ""
 	}
 
@@ -93,21 +97,19 @@ func (p Postgres) pgKey(errCode pq.ErrorCode, err error) string {
 	}
 
 	// Key (`keyname`)=(`keyvalue`) already exists
-	const KEY = "Key "
 	detail := e.Detail
-	if strings.HasPrefix(detail, KEY) {
-		detail = detail[len(KEY):]
-	} else {
-		return ""
+	i := strings.IndexByte(detail, '(')
+	if i >= 0 {
+		detail = detail[i+1:]
+		i = strings.IndexByte(detail, ')')
+		if i >= 0 {
+			detail = detail[:i]
+		}
 	}
-	i := strings.IndexByte(detail, ')')
-	if len(detail) < 3 || detail[0] != '(' || i <= 0 {
-		return ""
-	}
+	detail, _ = strings2.TrimQuote(detail)
 
-	key := strings.TrimSpace(detail[1:i])
-	if strings.Contains(key, ",") {
+	if strings.Contains(detail, ",") {
 		return "PRIMARY"
 	}
-	return key
+	return detail
 }

@@ -14,6 +14,10 @@ func Register(name string, driver gomodel.Driver) bool {
 	return !has
 }
 
+func Replace(name string, driver gomodel.Driver) {
+	drivers[name] = driver
+}
+
 func Get(name string) gomodel.Driver {
 	return drivers[name]
 }

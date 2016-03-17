@@ -9,12 +9,16 @@ import (
 
 type MySQL string
 
+func NewMySQL(name string) MySQL {
+	return MySQL(name)
+}
+
 func (m MySQL) String() string {
 	return string(m)
 }
 
 func init() {
-	Register("mysql", MySQL("mysql"))
+	Register("mysql", NewMySQL("mysql"))
 }
 
 func (MySQL) DSN(host, port, username, password, dbname string, cfg map[string]string) string {
