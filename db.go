@@ -211,7 +211,7 @@ func (db *DB) QueryById(sqlid uint64, args ...interface{}) Scanner {
 }
 
 func (db *DB) prepare(sql string) (Stmt, error) {
-	stmt, err := db.DB.Prepare(sql)
+	stmt, err := db.DB.Prepare(db.driver.Prepare(sql))
 	return WrapStmt(true, stmt, err)
 }
 

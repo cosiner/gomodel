@@ -154,7 +154,7 @@ func (tx *Tx) UpdateById(sqlid uint64, args ...interface{}) (int64, error) {
 }
 
 func (tx *Tx) prepare(sql string) (Stmt, error) {
-	stmt, err := tx.Tx.Prepare(sql)
+	stmt, err := tx.Tx.Prepare(tx.db.driver.Prepare(sql))
 	return WrapStmt(true, stmt, err)
 }
 
