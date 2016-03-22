@@ -8,6 +8,8 @@ import (
 
 type (
 	Cols interface {
+		// Cols return colum names
+		Names() []string
 		// String return columns string join with ",",
 		// result like "foo, bar"
 		String() string
@@ -47,6 +49,10 @@ type (
 
 const _emptyCols = emptyCols("")
 
+func (c *MultipleCols) Names() []string {
+	return c.Cols
+}
+
 func (c *MultipleCols) String() string {
 	if c.str == "" {
 		c.str = strings.Join(c.Cols, ",")
@@ -79,6 +85,10 @@ func (c *MultipleCols) Length() int {
 	return len(c.Cols)
 }
 
+func (c SingleCol) Names() []string {
+	return []string{string(c)}
+}
+
 func (c SingleCol) String() string {
 	return string(c)
 }
@@ -97,6 +107,10 @@ func (c SingleCol) Join(suffix, _ string) string {
 
 func (c SingleCol) Length() int {
 	return 1
+}
+
+func (emptyCols) Names() []string {
+	return nil
 }
 
 func (emptyCols) String() string {
