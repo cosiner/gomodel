@@ -65,7 +65,7 @@ func (c *MultipleCols) Paramed() string {
 
 func (c *MultipleCols) OnlyParam() string {
 	if c.onlyParamed == "" {
-		c.onlyParamed = slices.MakeStrings("?", len(c.Cols)).Join("", ",")
+		c.onlyParamed = OnlyParamed(len(c.Cols))
 	}
 
 	return c.onlyParamed
@@ -119,18 +119,30 @@ func (emptyCols) Length() int {
 	return 0
 }
 
-func (n ColNum) Length() int {
-	return int(n)
-}
-
-func (n ColNum) OnlyParam() string {
+func OnlyParamed(n int) string {
+	switch n {
+	case 0:
+		return ""
+	case 1:
+		return "?"
+	case 2:
+		return "?,?"
+	case 3:
+		return "?,?,?"
+	case 4:
+		return "?,?,?,?"
+	case 5:
+		return "?,?,?,?,?"
+	case 6:
+		return "?,?,?,?,?,?"
+	case 7:
+		return "?,?,?,?,?,?,?"
+	case 8:
+		return "?,?,?,?,?,?,?,?"
+	case 9:
+		return "?,?,?,?,?,?,?,?,?"
+	case 10:
+		return "?,?,?,?,?,?,?,?,?,?"
+	}
 	return slices.MakeStrings("?", int(n)).Join("", ",")
-}
-
-func (n ColNum) Paramed(cols []string) string {
-	return slices.Strings(cols).Join("=?", ",")
-}
-
-func (n ColNum) String(cols []string) string {
-	return strings.Join(cols, ",")
 }
