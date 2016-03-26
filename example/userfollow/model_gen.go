@@ -19,6 +19,7 @@ const (
 	userFieldsExcpFollowings = userFieldsAll & (^USER_FOLLOWINGS)
 	userFieldsExcpFollowers  = userFieldsAll & (^USER_FOLLOWERS)
 
+	UserTable         = "user"
 	UserIdCol         = "id"
 	UserNameCol       = "name"
 	UserAgeCol        = "age"
@@ -31,7 +32,7 @@ var (
 )
 
 func (u *User) Table() string {
-	return "user"
+	return UserTable
 }
 
 func (u *User) Columns() []string {
@@ -111,11 +112,22 @@ func (u *User) Ptrs(fields uint64, ptrs []interface{}) {
 }
 
 func (u *User) txDo(db *gomodel.DB, do func(*gomodel.Tx, *User) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	var (
+		tx  *gomodel.Tx
+		err error
+	)
+	switch r := exec.(type) {
+	case *gomodel.Tx:
+		tx = r
+	case *gomodel.DB:
+		tx, err = r.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Close()
+	default:
+		panic("unexpected underlay type of gomodel.Executor")
 	}
-	defer tx.Close()
 
 	err = do(tx, u)
 	tx.Success(err == nil)
@@ -175,6 +187,7 @@ const (
 	followFieldsExcpUserId       = followFieldsAll & (^FOLLOW_USERID)
 	followFieldsExcpFollowUserId = followFieldsAll & (^FOLLOW_FOLLOWUSERID)
 
+	FollowTable           = "user_follow"
 	FollowUserIdCol       = "user_id"
 	FollowFollowUserIdCol = "follow_user_id"
 )
@@ -184,7 +197,7 @@ var (
 )
 
 func (f *Follow) Table() string {
-	return "user_follow"
+	return FollowTable
 }
 
 func (f *Follow) Columns() []string {
@@ -234,11 +247,22 @@ func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
 }
 
 func (f *Follow) txDo(db *gomodel.DB, do func(*gomodel.Tx, *Follow) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	var (
+		tx  *gomodel.Tx
+		err error
+	)
+	switch r := exec.(type) {
+	case *gomodel.Tx:
+		tx = r
+	case *gomodel.DB:
+		tx, err = r.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Close()
+	default:
+		panic("unexpected underlay type of gomodel.Executor")
 	}
-	defer tx.Close()
 
 	err = do(tx, f)
 	tx.Success(err == nil)

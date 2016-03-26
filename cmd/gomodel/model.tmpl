@@ -18,6 +18,7 @@ const (
     {{range $index, $field := $fields}}{{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$upper}}_{{$field.Upper}})
     {{end}}
 
+    {{$normal}}Table = "{{$model.Table}}"
     {{range $index, $field := $fields}}{{$normal}}{{$field.Name}}Col = "{{$field.Column}}"
     {{end}}
 )
@@ -27,7 +28,7 @@ var (
 )
 
 func {{$recv}} Table() string {
-    return "{{$model.Table}}"
+    return {{$normal}}Table
 }
 
 {{if $model.Nocache}}
