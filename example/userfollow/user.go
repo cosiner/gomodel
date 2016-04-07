@@ -34,7 +34,7 @@ func (u *User) Add() error {
 }
 
 func DeleteUserById(id int64) error {
-	c, err := DB.ArgsDelete(userInstance, USER_ID, id)
+	c, err := DB.ArgsDelete(UserInstance, USER_ID, id)
 
 	return dberrs.NoAffects(c, err, ErrNoUser)
 }
@@ -56,7 +56,7 @@ func UsersByAge(age, start, count int) ([]User, error) {
 		Fields: userFieldsAll,
 	}
 
-	err := DB.ArgsLimit(&users, userInstance, userFieldsAll, USER_AGE, age, start, count)
+	err := DB.ArgsLimit(&users, UserInstance, userFieldsAll, USER_AGE, age, start, count)
 	return users.Values, dberrs.NoRows(err, ErrNoUser)
 }
 
@@ -65,6 +65,6 @@ func AllUsersByAge(age int) ([]User, error) {
 		Fields: userFieldsAll,
 	}
 
-	err := DB.ArgsAll(&users, userInstance, userFieldsAll, USER_AGE, age)
+	err := DB.ArgsAll(&users, UserInstance, userFieldsAll, USER_AGE, age)
 	return users.Values, dberrs.NoRows(err, ErrNoUser)
 }

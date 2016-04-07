@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	userInstance = new(User)
+	UserInstance = new(User)
 )
 
 func (u *User) Table() string {
@@ -111,7 +111,7 @@ func (u *User) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (u *User) txDo(db *gomodel.DB, do func(*gomodel.Tx, *User) error) error {
+func (u *User) txDo(exec gomodel.Executor, do func(*gomodel.Tx, *User) error) error {
 	var (
 		tx  *gomodel.Tx
 		err error
@@ -193,7 +193,7 @@ const (
 )
 
 var (
-	followInstance = new(Follow)
+	FollowInstance = new(Follow)
 )
 
 func (f *Follow) Table() string {
@@ -246,7 +246,7 @@ func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
 	}
 }
 
-func (f *Follow) txDo(db *gomodel.DB, do func(*gomodel.Tx, *Follow) error) error {
+func (f *Follow) txDo(exec gomodel.Executor, do func(*gomodel.Tx, *Follow) error) error {
 	var (
 		tx  *gomodel.Tx
 		err error

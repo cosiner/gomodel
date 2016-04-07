@@ -43,9 +43,9 @@ func (f *Follow) Delete() error {
 
 func (f *Follow) updateFollowInfo(tx *gomodel.Tx, err error, c int) error {
 	if err == nil {
-		_, err = tx.ArgsIncrBy(userInstance, USER_FOLLOWINGS, USER_ID, c, f.UserId)
+		_, err = tx.ArgsIncrBy(UserInstance, USER_FOLLOWINGS, USER_ID, c, f.UserId)
 		if err == nil {
-			_, err = tx.ArgsIncrBy(userInstance, USER_FOLLOWERS, USER_ID, c, f.FollowUserId)
+			_, err = tx.ArgsIncrBy(UserInstance, USER_FOLLOWERS, USER_ID, c, f.FollowUserId)
 		}
 	}
 	return err
