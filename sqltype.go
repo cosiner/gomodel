@@ -8,7 +8,7 @@ const (
 
 const (
 	// These are several predefined sql types
-	INSERT SQLType = iota + 1<<(MAX_NUMFIELDS*2)
+	INSERT SQLType = iota << (MAX_NUMFIELDS * 2)
 	DELETE
 	UPDATE
 	INCRBY
