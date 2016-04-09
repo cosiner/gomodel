@@ -92,10 +92,6 @@ func (p Postgres) pgKey(errCode pq.ErrorCode, err error) string {
 		return ""
 	}
 
-	if e.Code != errCode {
-		return ""
-	}
-
 	// Key (`keyname`)=(`keyvalue`) already exists
 	detail := e.Detail
 	i := strings.IndexByte(detail, '(')
