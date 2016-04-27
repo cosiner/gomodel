@@ -45,10 +45,15 @@ func (db *DB) Connect(driver Driver, dsn string, maxIdle, maxOpen int) error {
 	if err != nil {
 		return err
 	}
-	db.driver = driver
 
 	db_.SetMaxIdleConns(maxIdle)
 	db_.SetMaxOpenConns(maxOpen)
+
+	return db.Use(driver, db_)
+}
+
+func (db *DB) Use(driver Driver, db_ *sql.DB) error {
+	db.driver = driver
 	db.DB = db_
 	db.cache = newCache()
 
