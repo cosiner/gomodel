@@ -91,8 +91,8 @@ func (t *Table) StmtCount(exec Executor, whereFields uint64) (Stmt, error) {
 	return t.Stmt(exec, COUNT, 0, whereFields, t.SQLCount)
 }
 
-func (t *Table) StmtIncrBy(exec Executor, field, whereFields uint64) (Stmt, error) {
-	return t.Stmt(exec, INCRBY, field, whereFields, t.SQLIncrBy)
+func (t *Table) StmtIncrBy(exec Executor, fields, whereFields uint64) (Stmt, error) {
+	return t.Stmt(exec, INCRBY, fields, whereFields, t.SQLIncrBy)
 }
 
 func (t *Table) StmtExists(exec Executor, field, whereFields uint64) (Stmt, error) {
@@ -150,8 +150,8 @@ func (t *Table) PrepareCount(exec Executor, whereFields uint64) (Stmt, error) {
 	return t.Prepare(exec, COUNT, 0, whereFields, t.SQLCount)
 }
 
-func (t *Table) PrepareIncrBy(exec Executor, field, whereFields uint64) (Stmt, error) {
-	return t.Prepare(exec, INCRBY, field, whereFields, t.SQLIncrBy)
+func (t *Table) PrepareIncrBy(exec Executor, fields, whereFields uint64) (Stmt, error) {
+	return t.Prepare(exec, INCRBY, fields, whereFields, t.SQLIncrBy)
 }
 
 func (t *Table) PrepareExists(exec Executor, field, whereFields uint64) (Stmt, error) {
@@ -214,17 +214,10 @@ func (t *Table) SQLCount(_ Driver, _, whereFields uint64) string {
 }
 
 // SQLIncrBy create sql for increase/decrease field value
-func (t *Table) SQLIncrBy(_ Driver, field, whereFields uint64) string {
-	if n := NumFields(field); n != 1 {
-		panic("IncrBy only allow update one field, but got " + strconv.Itoa(n))
-	}
-
-	col := t.Col(field)
-
-	return fmt.Sprintf("UPDATE %s SET %s=%s+? %s",
+func (t *Table) SQLIncrBy(_ Driver, fields, whereFields uint64) string {
+	return fmt.Sprintf("UPDATE %s SET %s %s",
 		t.Name,
-		col,
-		col,
+		t.Cols(fields).IncrParamed(),
 		t.Where(whereFields),
 	)
 }

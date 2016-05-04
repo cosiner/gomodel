@@ -185,16 +185,19 @@ func (db *DB) ArgsCount(model Model, whereFields uint64, args ...interface{}) (c
 	return
 }
 
-func (db *DB) IncrBy(model Model, field, whereFields uint64, count int) (int64, error) {
-	args := make([]interface{}, NumFields(whereFields)+1)
-	args[0] = count
-	model.Vals(whereFields, args[1:])
+func (db *DB) IncrBy(model Model, fields, whereFields uint64, counts ...int) (int64, error) {
+	cntLen := len(counts)
+	args := make([]interface{}, NumFields(whereFields)+cntLen)
+	for i, count := range counts {
+		args[i] = count
+	}
+	model.Vals(whereFields, args[cntLen:])
 
-	return db.ArgsIncrBy(model, field, whereFields, args...)
+	return db.ArgsIncrBy(model, fields, whereFields, args...)
 }
 
-func (db *DB) ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error) {
-	stmt, err := db.Table(model).StmtIncrBy(db, field, whereFields)
+func (db *DB) ArgsIncrBy(model Model, fields, whereFields uint64, args ...interface{}) (int64, error) {
+	stmt, err := db.Table(model).StmtIncrBy(db, fields, whereFields)
 
 	return Update(stmt, err, args...)
 }

@@ -29,7 +29,7 @@ type (
 		Count(model Model, whereFields uint64) (count int64, err error)
 		ArgsCount(model Model, whereFields uint64, args ...interface{}) (count int64, err error)
 
-		IncrBy(model Model, field, whereFields uint64, count int) (int64, error)
+		IncrBy(model Model, field, whereFields uint64, counts ...int) (int64, error)
 		ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error)
 
 		Exists(model Model, field, whereFields uint64) (bool, error)

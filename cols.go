@@ -18,6 +18,9 @@ type (
 		// result like "foo=?, bar=?"
 		Paramed() string
 
+		// IncrParamed: result like "foo=foo+?, bar=bar+?"
+		IncrParamed() string
+
 		// OnlyParam return columns placeholdered string,
 		// each column was replaced with "?"
 		// result like "?, ?, ?, ?", count of "?" is colums length
@@ -35,6 +38,7 @@ type (
 		Cols        []string
 		str         string
 		paramed     string
+		incrParamed string
 		onlyParamed string
 	}
 
@@ -69,6 +73,20 @@ func (c *MultipleCols) Paramed() string {
 	return c.paramed
 }
 
+func (c *MultipleCols) IncrParamed() string {
+	if c.incrParamed == "" {
+		bytes := make([]byte, 0, len(c.Cols)*8)
+		for _, col := range c.Cols {
+			bytes = append(bytes, col...)
+			bytes = append(bytes, '=')
+			bytes = append(bytes, col...)
+			bytes = append(bytes, "+?"...)
+		}
+		c.incrParamed = string(bytes)
+	}
+	return c.incrParamed
+}
+
 func (c *MultipleCols) OnlyParam() string {
 	if c.onlyParamed == "" {
 		c.onlyParamed = OnlyParamed(len(c.Cols))
@@ -91,6 +109,10 @@ func (c SingleCol) Names() []string {
 
 func (c SingleCol) String() string {
 	return string(c)
+}
+
+func (c SingleCol) IncrParamed() string {
+	return string(c) + "=" + string(c) + "+?"
 }
 
 func (c SingleCol) Paramed() string {
@@ -118,6 +140,10 @@ func (emptyCols) String() string {
 }
 
 func (emptyCols) Paramed() string {
+	return ""
+}
+
+func (emptyCols) IncrParamed() string {
 	return ""
 }
 
