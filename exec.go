@@ -32,6 +32,9 @@ type (
 		IncrBy(model Model, field, whereFields uint64, count int) (int64, error)
 		ArgsIncrBy(model Model, field, whereFields uint64, args ...interface{}) (int64, error)
 
+		Exists(model Model, field, whereFields uint64) (bool, error)
+		ArgsExists(model Model, field, whereFields uint64, args ...interface{}) (bool, error)
+
 		ExecUpdate(sql string, args ...interface{}) (int64, error)
 		Exec(sql string, resType ResultType, args ...interface{}) (int64, error)
 

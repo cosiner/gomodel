@@ -15,4 +15,6 @@ const (
 	LIMIT
 	ONE
 	ALL
+	COUNT
+	EXISTS
 )

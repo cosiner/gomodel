@@ -88,11 +88,15 @@ func (t *Table) StmtAll(exec Executor, fields, whereFields uint64) (Stmt, error)
 }
 
 func (t *Table) StmtCount(exec Executor, whereFields uint64) (Stmt, error) {
-	return t.Stmt(exec, LIMIT, 0, whereFields, t.SQLCount)
+	return t.Stmt(exec, COUNT, 0, whereFields, t.SQLCount)
 }
 
 func (t *Table) StmtIncrBy(exec Executor, field, whereFields uint64) (Stmt, error) {
 	return t.Stmt(exec, INCRBY, field, whereFields, t.SQLIncrBy)
+}
+
+func (t *Table) StmtExists(exec Executor, field, whereFields uint64) (Stmt, error) {
+	return t.Stmt(exec, EXISTS, field, whereFields, t.SQLExists)
 }
 
 func (t *Table) Prepare(exec Executor, sqlType SQLType, fields, whereFields uint64, build SQLBuilder) (Stmt, error) {
@@ -143,11 +147,15 @@ func (t *Table) PrepareAll(exec Executor, fields, whereFields uint64) (Stmt, err
 }
 
 func (t *Table) PrepareCount(exec Executor, whereFields uint64) (Stmt, error) {
-	return t.Prepare(exec, LIMIT, 0, whereFields, t.SQLCount)
+	return t.Prepare(exec, COUNT, 0, whereFields, t.SQLCount)
 }
 
 func (t *Table) PrepareIncrBy(exec Executor, field, whereFields uint64) (Stmt, error) {
 	return t.Prepare(exec, INCRBY, field, whereFields, t.SQLIncrBy)
+}
+
+func (t *Table) PrepareExists(exec Executor, field, whereFields uint64) (Stmt, error) {
+	return t.Prepare(exec, EXISTS, field, whereFields, t.SQLExists)
 }
 
 // InsertSQL create insert sql for given fields
@@ -217,6 +225,17 @@ func (t *Table) SQLIncrBy(_ Driver, field, whereFields uint64) string {
 		t.Name,
 		col,
 		col,
+		t.Where(whereFields),
+	)
+}
+
+// SQLExists create sql for checking whether model exists
+func (t *Table) SQLExists(_ Driver, field, whereFields uint64) string {
+	col := t.Col(field)
+
+	return fmt.Sprintf("SELECT EXISTS(SELECT %s FROM %s %s) FROM DUAL",
+		col,
+		t.Name,
 		t.Where(whereFields),
 	)
 }

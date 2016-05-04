@@ -85,6 +85,14 @@ func NoRows(err, newErr error) error {
 	return err
 }
 
+func NonExists(exist bool, err, newErr error) error {
+	if err == nil && !exist {
+		return newErr
+	}
+
+	return err
+}
+
 func NoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr

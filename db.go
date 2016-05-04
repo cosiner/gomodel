@@ -199,6 +199,20 @@ func (db *DB) ArgsIncrBy(model Model, field, whereFields uint64, args ...interfa
 	return Update(stmt, err, args...)
 }
 
+func (db *DB) Exists(model Model, field, whereFields uint64) (bool, error) {
+	return db.ArgsExists(model, field, whereFields, FieldVals(model, whereFields)...)
+}
+
+func (db *DB) ArgsExists(model Model, field, whereFields uint64, args ...interface{}) (exist bool, err error) {
+	stmt, err := db.Table(model).StmtExists(db, field, whereFields)
+
+	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
+	err = scanner.One(&exist)
+
+	return
+}
+
 func (db *DB) ExecById(sqlid uint64, resTyp ResultType, args ...interface{}) (int64, error) {
 	stmt, err := db.StmtById(sqlid)
 

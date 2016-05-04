@@ -135,6 +135,19 @@ func (tx *Tx) ArgsIncrBy(model Model, field, whereFields uint64, args ...interfa
 	return CloseUpdate(stmt, err, args...)
 }
 
+func (tx *Tx) Exists(model Model, fields, whereFields uint64) (exists bool, err error) {
+	return tx.ArgsExists(model, fields, whereFields, FieldVals(model, whereFields)...)
+}
+
+func (tx *Tx) ArgsExists(model Model, fields, whereFields uint64, args ...interface{}) (exists bool, err error) {
+	stmt, err := tx.Table(model).PrepareExists(tx, fields, whereFields)
+	scanner := Query(stmt, err, args...)
+	defer scanner.Close()
+	err = scanner.One(&exists)
+
+	return
+}
+
 func (tx *Tx) QueryById(sqlid uint64, args ...interface{}) Scanner {
 	stmt, err := tx.PrepareById(sqlid)
 
