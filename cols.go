@@ -76,7 +76,10 @@ func (c *MultipleCols) Paramed() string {
 func (c *MultipleCols) IncrParamed() string {
 	if c.incrParamed == "" {
 		bytes := make([]byte, 0, len(c.Cols)*8)
-		for _, col := range c.Cols {
+		for i, col := range c.Cols {
+			if i != 0 {
+				bytes = append(bytes, ',')
+			}
 			bytes = append(bytes, col...)
 			bytes = append(bytes, '=')
 			bytes = append(bytes, col...)
