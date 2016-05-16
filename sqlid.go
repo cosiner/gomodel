@@ -39,3 +39,27 @@ func NewSqlId(create func(Executor) string) (id uint64) {
 	store.Unlock()
 	return
 }
+
+type SqlIdKeeper struct {
+	ids map[string]string
+	mu  sync.RWMutex
+}
+
+func NewSqlIdKeeper() *SqlIdKeeper {
+	return &SqlIdKeeper{
+		ids: make(map[string]string),
+	}
+}
+
+func (s *SqlIdKeeper) Get(key string) (string, bool) {
+	s.mu.RLock()
+	val, has := s.ids[key]
+	s.mu.RUnlock()
+	return val, has
+}
+
+func (s *SqlIdKeeper) Set(key, val string) {
+	s.mu.Lock()
+	s.ids[key] = val
+	s.mu.Unlock()
+}
