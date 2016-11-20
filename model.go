@@ -40,6 +40,14 @@ var (
 	NumFields = bitset.BitCount
 )
 
+func Fields(fields ...uint64) uint64 {
+	var f uint64
+	for _, field := range fields {
+		f |= field
+	}
+	return f
+}
+
 // NumFieldsExcp create fieldset except given fields
 func NumFieldsExcp(numField uint64, fields ...uint64) uint64 {
 	return AllFieldsExcp(1<<numField-1, fields...)
@@ -47,11 +55,15 @@ func NumFieldsExcp(numField uint64, fields ...uint64) uint64 {
 
 // AllFieldsExcp create fieldset except given fields
 func AllFieldsExcp(allFields uint64, fields ...uint64) uint64 {
-	var f uint64
-	for _, field := range fields {
-		f |= field
+	return allFields & ^Fields(fields...)
+}
+
+func AllFieldsOrSome(allFields uint64, fields ...uint64) uint64 {
+	f := Fields(fields...)
+	if f != 0 {
+		return f
 	}
-	return allFields & (^f)
+	return allFields
 }
 
 // FieldVals will extract values of fields from model, and concat with remains
