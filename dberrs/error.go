@@ -77,12 +77,20 @@ func PrimaryKey(exec gomodel.Executor) string {
 	return exec.Driver().PrimaryKey()
 }
 
+func AllowNoRows(err error) error {
+	return NoRows(err, nil)
+}
+
 func NoRows(err, newErr error) error {
 	if err == sql.ErrNoRows {
 		return newErr
 	}
 
 	return err
+}
+
+func AllowNonExists(exist bool, err error) error {
+	return NonExists(exist, err, nil)
 }
 
 func NonExists(exist bool, err, newErr error) error {
@@ -93,12 +101,20 @@ func NonExists(exist bool, err, newErr error) error {
 	return err
 }
 
+func AllowNoAffects(c int64, err error) error {
+	return NoAffects(c, err, nil)
+}
+
 func NoAffects(c int64, err, newErr error) error {
 	if err == nil && c == 0 {
 		return newErr
 	}
 
 	return err
+}
+
+func AllowHasEffects(c int64, err error) error {
+	return HasAffects(c, err, nil)
 }
 
 func HasAffects(c int64, err, newErr error) error {
