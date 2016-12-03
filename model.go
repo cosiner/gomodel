@@ -36,7 +36,7 @@ type (
 )
 
 var (
-	// NumFIelds return fields count
+	// NumFields return fields count
 	NumFields = bitset.BitCount
 )
 
