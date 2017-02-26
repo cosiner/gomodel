@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
+	"go/parser"
+	"go/token"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -48,6 +53,14 @@ const Tmplfile = "model.tmpl"
 
 // change this if need
 var defTmplPath = filepath.Join(path2.Home(), ".config", "go", Tmplfile)
+
+func packageName(outfile string) string {
+	abs, err := filepath.Abs(outfile)
+	if err != nil {
+		return ""
+	}
+	return filepath.Base(filepath.Dir(abs))
+}
 
 func main() {
 	if copyTmpl {
@@ -105,13 +118,37 @@ func main() {
 	}
 
 	errors.Fatal(
-		file.OpenOrCreate(outfile, false, func(fd *os.File) error {
+		file.Open(outfile, os.O_CREATE|os.O_RDWR|os.O_APPEND, func(fd *os.File) error {
 			t, err := template.ParseFiles(tmplfile)
 			if err != nil {
 				return err
 			}
+			err = t.Execute(fd, result)
+			if err != nil {
+				return err
+			}
 
-			return t.Execute(fd, result)
+			pkg := packageName(outfile)
+			if pkg == "" {
+				return nil
+			}
+			fd.Seek(0, os.SEEK_SET)
+
+			content, err := ioutil.ReadAll(fd)
+			if err != nil {
+				return err
+			}
+			fset := token.NewFileSet()
+			ast, err := parser.ParseFile(fset, outfile, bytes.NewReader(content), parser.ParseComments)
+			if err != nil {
+				return err
+			}
+			if ast.Name.Name == pkg {
+				return nil
+			}
+			ast.Name.Name = pkg
+			fd.Truncate(0)
+			return format.Node(fd, fset, ast)
 		}),
 	)
 }
