@@ -78,15 +78,12 @@ func CheckFieldForIncrBy(field, fields uint64, count int64) error {
 	if count != -1 && count != 1 {
 		return fmt.Errorf("unexpected field incrby count %d, must be -1 or 1", count)
 	}
+	return nil
 }
 
 type IncrByFunc func(exec gomodel.Executor, field uint64, whereArgs ...interface{}) error
 
 func FuncForIncrByFieldCount(defaultRunner gomodel.Executor, model gomodel.Model, fields, whereFields uint64, noAffectsError error) IncrByFunc {
-	if gomodel.NumFields(whereFields) == 0 || gomodel.NumFields(fields) == 0 {
-		return fmt.Errorf("unexpected field count of fields %d and whereField %d", fields, whereFields)
-	}
-
 	return func(exec gomodel.Executor, field uint64, whereArgs ...interface{}) error {
 		var count int64
 		switch arg := whereArgs[0].(type) {

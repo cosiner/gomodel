@@ -6,12 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cosiner/gomodel"
 	"github.com/cosiner/gomodel/utils"
 )
 
 type Postgres string
 
-func NewPostgres(name string) Postgres {
+func NewPostgres(name string) gomodel.Driver {
 	return Postgres(name)
 }
 

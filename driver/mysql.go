@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/cosiner/gomodel"
 	"github.com/cosiner/gomodel/utils"
 )
 
 type MySQL string
 
-func NewMySQL(name string) MySQL {
+func NewMySQL(name string) gomodel.Driver {
 	return MySQL(name)
 }
 
