@@ -1,10 +1,11 @@
 package driver
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
-	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type MySQL string
@@ -22,14 +23,22 @@ func init() {
 }
 
 func (MySQL) DSN(host, port, username, password, dbname string, cfg map[string]string) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s",
-		username,
-		password,
-		host,
-		port,
-		dbname,
-		strings2.JoinPairs(cfg, "=", "&"),
-	)
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "%s:%s@tcp(%s:%s)/%s", username, password, host, port, dbname)
+
+	var i int
+	for k, v := range cfg {
+		if i == 0 {
+			buf.WriteByte('?')
+		} else {
+			buf.WriteByte('&')
+		}
+		buf.WriteByte(' ')
+		buf.WriteString(k)
+		buf.WriteByte('=')
+		buf.WriteString(v)
+	}
+	return buf.String()
 }
 
 func (MySQL) Prepare(sql string) string {
@@ -69,7 +78,7 @@ func (MySQL) DuplicateKey(err error) string {
 		return ""
 	}
 
-	s, _ = strings2.TrimQuote(s[index:])
+	s, _ = utils.TrimQuote(s[index:])
 	return s
 }
 
@@ -93,13 +102,5 @@ func (MySQL) ForeignKey(err error) string {
 	}
 	s = s[:index+1]
 
-	s, match := strings2.TrimWrap(s, "(", ")", true)
-	if !match {
-		return ""
-	}
-	s, match = strings2.TrimWrap(s, "`", "`", true)
-	if !match {
-		return ""
-	}
-	return s
+	return strings.TrimSuffix(strings.TrimPrefix(s, "("), ")")
 }

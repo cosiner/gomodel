@@ -5,9 +5,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/cosiner/gohper/reflect2"
-	"github.com/cosiner/gohper/slices"
-	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type (
@@ -331,15 +329,17 @@ func parseModel(v Model, db *DB) *Table {
 	if c, is := v.(Columner); is {
 		return newTable(v.Table(), c.Columns(), nocache)
 	}
-
-	typ := reflect2.IndirectType(v)
+	typ := reflect.TypeOf(v)
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
 	num := typ.NumField()
 
 	cols := make([]string, 0)
 
 	for i := 0; i < num; i++ {
 		field := typ.Field(i)
-		col := strings2.ToSnake(field.Name)
+		col := utils.ToSnakeCase(field.Name)
 
 		b, err := strconv.ParseBool(field.Tag.Get("nocache"))
 		if err == nil {
@@ -366,7 +366,7 @@ func parseModel(v Model, db *DB) *Table {
 
 	return newTable(
 		v.Table(),
-		slices.Strings(cols).FitCapToLen().Strings(),
+		utils.TruncCapToLen(cols),
 		nocache,
 	)
 }

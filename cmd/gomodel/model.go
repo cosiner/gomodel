@@ -3,8 +3,7 @@ package main
 import (
 	"strings"
 
-	"github.com/cosiner/gohper/goutil"
-	"github.com/cosiner/gohper/strings2"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type Model struct {
@@ -19,8 +18,8 @@ type Model struct {
 func NewModel(name, table, nocache string) *Model {
 	return &Model{
 		Name:       name,
-		Self:       strings2.ToLowerAbridge(name),
-		Unexported: goutil.ToUnexported(name),
+		Self:       utils.ToLowerAbridgeCase(name),
+		Unexported: utils.UnexportedName(name),
 		Upper:      strings.ToUpper(name),
 		Table:      table,
 		Nocache:    nocache,

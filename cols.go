@@ -3,7 +3,7 @@ package gomodel
 import (
 	"strings"
 
-	"github.com/cosiner/gohper/slices"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type (
@@ -67,7 +67,7 @@ func (c *MultipleCols) String() string {
 
 func (c *MultipleCols) Paramed() string {
 	if c.paramed == "" {
-		c.paramed = slices.Strings(c.Cols).Join("=?", ",")
+		c.paramed = utils.JoinStrings(c.Cols, "=?", ",")
 	}
 
 	return c.paramed
@@ -99,7 +99,7 @@ func (c *MultipleCols) OnlyParam() string {
 }
 
 func (c *MultipleCols) Join(suffix, sep string) string {
-	return slices.Strings(c.Cols).Join(suffix, sep)
+	return utils.JoinStrings(c.Cols, suffix, sep)
 }
 
 func (c *MultipleCols) Length() int {
@@ -187,5 +187,5 @@ func OnlyParamed(n int) string {
 	case 10:
 		return "?,?,?,?,?,?,?,?,?,?"
 	}
-	return slices.MakeStrings("?", int(n)).Join("", ",")
+	return utils.JoinStrings(utils.MakeStrings("?", int(n)), "", ",")
 }

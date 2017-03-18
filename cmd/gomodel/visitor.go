@@ -6,9 +6,8 @@ import (
 	"strings"
 
 	"github.com/cosiner/gohper/ds/sortedmap"
-	"github.com/cosiner/gohper/strings2"
 	"github.com/cosiner/gohper/utils/ast"
-	"github.com/cosiner/gohper/utils/pair"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type Table struct {
@@ -34,11 +33,11 @@ func newVisitor() Visitor {
 // add an model and it's field to parse result
 func (v Visitor) add(model, table, field, col string) {
 	if table == "" {
-		table = strings2.ToSnake(model)
+		table = utils.ToSnakeCase(model)
 	}
 
 	if col == "" {
-		col = strings2.ToSnake(field)
+		col = utils.ToSnakeCase(field)
 	}
 
 	t, has := v.Models[model]
@@ -161,12 +160,23 @@ func (v Visitor) extractSQLs(docs []string) {
 
 		} else if strings.HasPrefix(d, GOMODEL) {
 			d = d[len(GOMODEL):]
-			p := pair.Parse(d, "=").Trim()
 
-			if !strings.HasSuffix(p.Value, "[") {
-				v.SQLs[p.Key] = p.Value
+			var (
+				secs  = strings.SplitN(d, "=", 2)
+				key   string
+				value string
+			)
+			if len(secs) > 0 {
+				key = strings.TrimSpace(secs[0])
+				if len(secs) > 1 {
+					value = strings.TrimSpace(secs[1])
+				}
+			}
+
+			if !strings.HasSuffix(value, "[") {
+				v.SQLs[key] = value
 			} else {
-				name = p.Key
+				name = key
 				sqls = sqls[:0]
 
 				state = PARSING

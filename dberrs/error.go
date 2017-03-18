@@ -3,14 +3,14 @@ package dberrs
 
 import (
 	"database/sql"
+	"errors"
 
-	"github.com/cosiner/gohper/errors"
 	"github.com/cosiner/gomodel"
 )
 
 // Only tested for mysql
-const (
-	NonError = errors.Err("non error")
+var (
+	NonError = errors.New("non error")
 )
 
 type (

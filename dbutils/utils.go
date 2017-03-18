@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/cosiner/gohper/errors"
-	"github.com/cosiner/gohper/slices"
 	"github.com/cosiner/gomodel"
 	"github.com/cosiner/gomodel/dberrs"
+	"github.com/cosiner/gomodel/utils"
 )
 
 func QueryOneResultById(exec gomodel.Executor, sqlid uint64, ptr interface{}, args ...interface{}) error {
@@ -54,7 +53,7 @@ func (opt CondOption) CondArgs() (uint64, []interface{}) {
 		if usable {
 			otherFields |= condField
 		} else {
-			args = slices.Interfaces(args).Remove(index).Interfaces()
+			args = utils.RemoveSliceItem(args, index)
 			skipped++
 		}
 	}
@@ -71,13 +70,13 @@ func CondArgs(otherFields uint64, condFields []uint64, condArgIndex []int, args 
 	return opt.CondArgs()
 }
 
-func CheckFieldForIncrBy(field, fields uint64, count int64) {
+func CheckFieldForIncrBy(field, fields uint64, count int64) error {
 	if gomodel.NumFields(field) == 0 || field&fields == 0 {
-		panic(errors.Newf("unexpected field type %d", field))
+		return fmt.Errorf("unexpected field type %d", field)
 	}
 
 	if count != -1 && count != 1 {
-		panic(errors.Newf("unexpected field incrby count %d, must be -1 or 1", count))
+		return fmt.Errorf("unexpected field incrby count %d, must be -1 or 1", count)
 	}
 }
 
@@ -85,7 +84,7 @@ type IncrByFunc func(exec gomodel.Executor, field uint64, whereArgs ...interface
 
 func FuncForIncrByFieldCount(defaultRunner gomodel.Executor, model gomodel.Model, fields, whereFields uint64, noAffectsError error) IncrByFunc {
 	if gomodel.NumFields(whereFields) == 0 || gomodel.NumFields(fields) == 0 {
-		panic(errors.Newf("unexpected field count of fields %d and whereField %d", fields, whereFields))
+		return fmt.Errorf("unexpected field count of fields %d and whereField %d", fields, whereFields)
 	}
 
 	return func(exec gomodel.Executor, field uint64, whereArgs ...interface{}) error {
@@ -110,9 +109,13 @@ func FuncForIncrByFieldCount(defaultRunner gomodel.Executor, model gomodel.Model
 		case uint64:
 			count = int64(arg)
 		default:
-			panic(fmt.Sprintf("count %v must be an integer", arg))
+			return fmt.Errorf("count %v must be an integer", arg)
 		}
-		CheckFieldForIncrBy(field, fields, count)
+		err := CheckFieldForIncrBy(field, fields, count)
+		if err != nil {
+			return err
+		}
+
 		if exec == nil {
 			exec = defaultRunner
 		}

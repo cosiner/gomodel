@@ -1,9 +1,5 @@
 package gomodel
 
-import (
-	"github.com/cosiner/gohper/ds/bitset"
-)
-
 type (
 	// Model represent a database model mapping to a table
 	Model interface {
@@ -35,10 +31,15 @@ type (
 	}
 )
 
-var (
-	// NumFields return fields count
-	NumFields = bitset.BitCount
-)
+func NumFields(n uint64) int {
+	n -= (n >> 1) & 0x5555555555555555
+	n = (n>>2)&0x3333333333333333 + n&0x3333333333333333
+	n += n >> 4
+	n &= 0x0f0f0f0f0f0f0f0f
+	n *= 0x0101010101010101
+
+	return int(n >> 56)
+}
 
 func Fields(fields ...uint64) uint64 {
 	var f uint64

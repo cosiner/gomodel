@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/cosiner/gohper/errors"
+	"fmt"
+
 	"github.com/cosiner/sqlparser"
 )
 
@@ -98,7 +99,7 @@ func (s *Section) modelTable(v Visitor, tab *sqlparser.TableName) (*Table, error
 	tabname := string(tab.Name)
 	model := v.Models[tabname]
 	if model == nil {
-		return nil, errors.Newf("model %s hasn't been registered", tabname)
+		return nil, fmt.Errorf("model %s hasn't been registered", tabname)
 	}
 
 	return model, nil
@@ -108,7 +109,7 @@ func (s *Section) replace(v Visitor) error {
 	for tabalias, cols := range s.Columns {
 		tabnodes, has := s.Tables[tabalias]
 		if !has {
-			return errors.Newf("table alias %s not found in sql", tabalias)
+			return fmt.Errorf("table alias %s not found in sql", tabalias)
 		}
 
 		tabnode := tabnodes[0]

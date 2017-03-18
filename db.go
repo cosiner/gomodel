@@ -3,9 +3,9 @@ package gomodel
 
 import (
 	"database/sql"
+	"fmt"
 
-	"github.com/cosiner/gohper/conv"
-	"github.com/cosiner/gohper/errors"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type (
@@ -138,14 +138,18 @@ func (db *DB) Limit(store Store, model Model, fields, whereFields uint64, start,
 func (db *DB) ArgsLimit(store Store, model Model, fields, whereFields uint64, args ...interface{}) error {
 	argc := len(args)
 	if argc < 2 {
-		panic(errors.Newf("ArgsLimit need at least two parameters, but only got %d", argc))
+		return fmt.Errorf("ArgsLimit need at least two parameters, but only got %d", argc)
 	}
-	offset, err := conv.IfaceToInt(args[argc-2])
-	errors.Panicln(err)
-	count, err := conv.IfaceToInt(args[argc-1])
-	errors.Panicln(err)
+	offset, err := utils.ConvToInt64(args[argc-2])
+	if err != nil {
+		return err
+	}
+	count, err := utils.ConvToInt64(args[argc-1])
+	if err != nil {
+		return err
+	}
 
-	arg1, arg2 := db.driver.ParamLimit(offset, count)
+	arg1, arg2 := db.driver.ParamLimit(int(offset), int(count))
 	args[argc-2], args[argc-1] = arg1, arg2
 
 	stmt, err := db.Table(model).StmtLimit(db, fields, whereFields)

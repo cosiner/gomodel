@@ -1,12 +1,12 @@
 package driver
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/cosiner/gohper/strings2"
-	"github.com/lib/pq"
+	"github.com/cosiner/gomodel/utils"
 )
 
 type Postgres string
@@ -24,14 +24,15 @@ func init() {
 }
 
 func (Postgres) DSN(host, port, username, password, dbname string, cfg map[string]string) string {
-	return fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s %s",
-		username,
-		password,
-		host,
-		port,
-		dbname,
-		strings2.JoinPairs(cfg, "=", " "),
-	)
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "user=%s password=%s host=%s port=%s dbname=%s", username, password, host, port, dbname)
+	for k, v := range cfg {
+		buf.WriteByte(' ')
+		buf.WriteString(k)
+		buf.WriteByte('=')
+		buf.WriteString(v)
+	}
+	return buf.String()
 }
 
 func (p Postgres) Prepare(sql string) string {
@@ -74,26 +75,30 @@ func (Postgres) PrimaryKey() string {
 }
 
 func (p Postgres) DuplicateKey(err error) string {
-	const PGERR_DUPLICATE pq.ErrorCode = "23505"
+	const PGERR_DUPLICATE string = "23505"
 	return p.pgKey(PGERR_DUPLICATE, err)
 }
 
 func (p Postgres) ForeignKey(err error) string {
-	const PGERR_FOREIGN pq.ErrorCode = "23503"
+	const PGERR_FOREIGN string = "23503"
 	return p.pgKey(PGERR_FOREIGN, err)
 }
 
-func (p Postgres) pgKey(errCode pq.ErrorCode, err error) string {
+type PGError interface {
+	Get(k byte) (v string)
+}
+
+func (p Postgres) pgKey(errCode string, err error) string {
 	if err == nil {
 		return ""
 	}
-	e, is := err.(*pq.Error)
-	if !is || e.Code != errCode {
+	e, is := err.(PGError)
+	if !is || e.Get('C') != errCode {
 		return ""
 	}
 
 	// Key (`keyname`)=(`keyvalue`) already exists
-	detail := e.Detail
+	detail := e.Get('D')
 	i := strings.IndexByte(detail, '(')
 	if i >= 0 {
 		detail = detail[i+1:]
@@ -102,7 +107,7 @@ func (p Postgres) pgKey(errCode pq.ErrorCode, err error) string {
 			detail = detail[:i]
 		}
 	}
-	detail, _ = strings2.TrimQuote(detail)
+	detail, _ = utils.TrimQuote(detail)
 
 	if strings.Contains(detail, ",") {
 		return "PRIMARY"
