@@ -57,7 +57,7 @@ CREATE TABLE user (
     followers int NOT NULL DEFAULT 0,
 
     PRIMARY KEY(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8
     `)
 	errors.Panic(err)
 
@@ -67,7 +67,7 @@ CREATE TABLE user_follow (
     follow_user_id varchar(16),
 
     PRIMARY KEY(user_id, follow_user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8
     `)
 	errors.Panic(err)
 }
