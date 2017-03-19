@@ -38,6 +38,7 @@ func (MySQL) DSN(host, port, username, password, dbname string, cfg map[string]s
 		buf.WriteString(k)
 		buf.WriteByte('=')
 		buf.WriteString(v)
+		i++
 	}
 	return buf.String()
 }
@@ -102,6 +103,6 @@ func (MySQL) ForeignKey(err error) string {
 		return ""
 	}
 	s = s[:index+1]
-
-	return strings.TrimSuffix(strings.TrimPrefix(s, "("), ")")
+	s = strings.TrimSuffix(strings.TrimPrefix(s, "(`"), "`)")
+	return s
 }

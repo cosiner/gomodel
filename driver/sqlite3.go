@@ -35,6 +35,7 @@ func (SQLite3) DSN(_, _, _, _, path string, cfg map[string]string) string {
 		buf.WriteString(k)
 		buf.WriteByte('=')
 		buf.WriteString(v)
+		i++
 	}
 	return buf.String()
 }
