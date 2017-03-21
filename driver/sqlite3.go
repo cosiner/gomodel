@@ -17,7 +17,7 @@ func (m SQLite3) String() string {
 }
 
 func init() {
-	Register("sqlite3", NewMySQL("sqlite3"))
+	Register("sqlite3", NewSQLite3("sqlite3"))
 }
 
 func (SQLite3) DSN(_, _, _, _, path string, cfg map[string]string) string {
