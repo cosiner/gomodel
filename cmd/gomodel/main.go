@@ -17,6 +17,7 @@ import (
 
 type Flags struct {
 	Out      string `names:"-o" default:"model_gen.go" usage:"output file"`
+	Pkg      string `names:"-pkg" usage:"output file package name, default directory of output file"`
 	Model    bool   `names:"-model" default:"true" usage:"implete Model for structure"`
 	SQL      bool   `names:"-sql" default:"true" usage:"generate SQL"`
 	Template string `names:"-t" default:"" usage:"template file, if not found using default"`
@@ -71,7 +72,7 @@ func main() {
 		data.Models = v.buildModelFields()
 	}
 
-	utils.FatalOnError(executeTemplate(flags.Out, tmpl, data))
+	utils.FatalOnError(executeTemplate(flags.Out, flags.Pkg, tmpl, data))
 }
 
 type templateData struct {
@@ -79,7 +80,7 @@ type templateData struct {
 	SQLs   map[string]string
 }
 
-func executeTemplate(outfile string, tmpl *template.Template, data templateData) error {
+func executeTemplate(outfile, outpkg string, tmpl *template.Template, data templateData) error {
 	outfd, err := os.OpenFile(outfile, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -90,9 +91,11 @@ func executeTemplate(outfile string, tmpl *template.Template, data templateData)
 	if err != nil {
 		return err
 	}
-	pkg := packageName(outfile)
-	if pkg == "" {
-		return nil
+	if outpkg == "" {
+		outpkg = packageName(outfile)
+		if outpkg == "" {
+			return nil
+		}
 	}
 
 	fset := token.NewFileSet()
@@ -100,10 +103,10 @@ func executeTemplate(outfile string, tmpl *template.Template, data templateData)
 	if err != nil {
 		return err
 	}
-	if ast.Name.Name == pkg {
+	if ast.Name.Name == outpkg {
 		return nil
 	}
-	ast.Name.Name = pkg
+	ast.Name.Name = outpkg
 	outfd.Truncate(0)
 	return format.Node(outfd, fset, ast)
 }
