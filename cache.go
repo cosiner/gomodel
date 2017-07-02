@@ -25,7 +25,7 @@ func (c cache) StmtById(exec Executor, sqlid uint64) (*sql.Stmt, error) {
 
 		return item.stmt, nil
 	}
-	sql_ := sqlById(exec, sqlid)
+	sql_ := SqlById(exec, sqlid)
 	sql_ = exec.Driver().Prepare(sql_)
 	sqlPrinter.Print(false, sql_)
 
@@ -71,7 +71,7 @@ func (c cache) SetStmt(exec Executor, sqlid uint64, sql string) (*sql.Stmt, erro
 func (c cache) PrepareById(exec Executor, sqlid uint64) (*sql.Stmt, error) {
 	item, has := c[sqlid]
 	if !has {
-		item.sql = exec.Driver().Prepare(sqlById(exec, sqlid))
+		item.sql = exec.Driver().Prepare(SqlById(exec, sqlid))
 		c[sqlid] = item
 	}
 	sqlPrinter.Print(has, item.sql)

@@ -31,8 +31,6 @@ func Open(driver Driver, dsn string, maxIdle, maxOpen int) (*DB, error) {
 
 // NewDB create a new DB instance
 func NewDB() *DB {
-	initSqlStore()
-
 	return &DB{
 		tables:        make(map[string]*Table),
 		InitialModels: 20,

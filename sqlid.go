@@ -2,31 +2,26 @@ package gomodel
 
 import "sync"
 
-var (
-	// InitialSQLCount is the initial capacity of sql storage,
-	// it should bee changed before NewDB
-	InitialSQLCount uint64 = 256
-)
-
-const (
-	_InitialSQLBufsize = 256
-)
-
 type sqlStore struct {
 	sqls []func(Executor) string
-	sync.Mutex
+	sync.RWMutex
 }
 
-var store sqlStore
+var store = sqlStore{
+	sqls: make([]func(Executor) string, 0, 32),
+}
 
-func initSqlStore() {
-	if store.sqls == nil {
-		store.sqls = make([]func(Executor) string, 0, InitialSQLCount)
+func SqlById(executor Executor, id uint64) string {
+	var creator func(Executor) string
+	store.RLock()
+	if id < uint64(len(store.sqls)) {
+		creator = store.sqls[id]
 	}
-}
-
-func sqlById(executor Executor, id uint64) string {
-	return store.sqls[id](executor)
+	store.RUnlock()
+	if creator == nil {
+		return ""
+	}
+	return creator(executor)
 }
 
 // NewSqlId create an id for this sql creator used in methods like XXXById

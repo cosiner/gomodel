@@ -11,14 +11,15 @@ const (
 	USER_FOLLOWINGS
 	USER_FOLLOWERS
 
-	userFieldEnd             = iota
-	userFieldsAll            = 1<<userFieldEnd - 1
-	userFieldsExcpId         = userFieldsAll & (^USER_ID)
-	userFieldsExcpName       = userFieldsAll & (^USER_NAME)
-	userFieldsExcpAge        = userFieldsAll & (^USER_AGE)
-	userFieldsExcpFollowings = userFieldsAll & (^USER_FOLLOWINGS)
-	userFieldsExcpFollowers  = userFieldsAll & (^USER_FOLLOWERS)
+	UserFieldEnd             = iota
+	UserFieldsAll            = 1<<UserFieldEnd - 1
+	UserFieldsExcpId         = UserFieldsAll & (^USER_ID)
+	UserFieldsExcpName       = UserFieldsAll & (^USER_NAME)
+	UserFieldsExcpAge        = UserFieldsAll & (^USER_AGE)
+	UserFieldsExcpFollowings = UserFieldsAll & (^USER_FOLLOWINGS)
+	UserFieldsExcpFollowers  = UserFieldsAll & (^USER_FOLLOWERS)
 
+	UserTable         = "user"
 	UserIdCol         = "id"
 	UserNameCol       = "name"
 	UserAgeCol        = "age"
@@ -27,109 +28,120 @@ const (
 )
 
 var (
-	userInstance = new(User)
+	UserInstance = new(User)
 )
 
-func (u *User) Table() string {
-	return "user"
+func (uu *User) Table() string {
+	return UserTable
 }
 
-func (u *User) Columns() []string {
+func (uu *User) Columns() []string {
 	return []string{
 		UserIdCol, UserNameCol, UserAgeCol, UserFollowingsCol, UserFollowersCol,
 	}
 }
 
-func (u *User) Vals(fields uint64, vals []interface{}) {
+func (uu *User) Vals(fields uint64, vals []interface{}) {
 	if fields != 0 {
-		if fields == userFieldsAll {
-			vals[0] = u.Id
-			vals[1] = u.Name
-			vals[2] = u.Age
-			vals[3] = u.Followings
-			vals[4] = u.Followers
+		if fields == UserFieldsAll {
+			vals[0] = uu.Id
+			vals[1] = uu.Name
+			vals[2] = uu.Age
+			vals[3] = uu.Followings
+			vals[4] = uu.Followers
 
 		} else {
 			index := 0
 			if fields&USER_ID != 0 {
-				vals[index] = u.Id
+				vals[index] = uu.Id
 				index++
 			}
 			if fields&USER_NAME != 0 {
-				vals[index] = u.Name
+				vals[index] = uu.Name
 				index++
 			}
 			if fields&USER_AGE != 0 {
-				vals[index] = u.Age
+				vals[index] = uu.Age
 				index++
 			}
 			if fields&USER_FOLLOWINGS != 0 {
-				vals[index] = u.Followings
+				vals[index] = uu.Followings
 				index++
 			}
 			if fields&USER_FOLLOWERS != 0 {
-				vals[index] = u.Followers
+				vals[index] = uu.Followers
 				index++
 			}
 		}
 	}
 }
 
-func (u *User) Ptrs(fields uint64, ptrs []interface{}) {
+func (uu *User) Ptrs(fields uint64, ptrs []interface{}) {
 	if fields != 0 {
-		if fields == userFieldsAll {
-			ptrs[0] = &(u.Id)
-			ptrs[1] = &(u.Name)
-			ptrs[2] = &(u.Age)
-			ptrs[3] = &(u.Followings)
-			ptrs[4] = &(u.Followers)
+		if fields == UserFieldsAll {
+			ptrs[0] = &(uu.Id)
+			ptrs[1] = &(uu.Name)
+			ptrs[2] = &(uu.Age)
+			ptrs[3] = &(uu.Followings)
+			ptrs[4] = &(uu.Followers)
 
 		} else {
 			index := 0
 			if fields&USER_ID != 0 {
-				ptrs[index] = &(u.Id)
+				ptrs[index] = &(uu.Id)
 				index++
 			}
 			if fields&USER_NAME != 0 {
-				ptrs[index] = &(u.Name)
+				ptrs[index] = &(uu.Name)
 				index++
 			}
 			if fields&USER_AGE != 0 {
-				ptrs[index] = &(u.Age)
+				ptrs[index] = &(uu.Age)
 				index++
 			}
 			if fields&USER_FOLLOWINGS != 0 {
-				ptrs[index] = &(u.Followings)
+				ptrs[index] = &(uu.Followings)
 				index++
 			}
 			if fields&USER_FOLLOWERS != 0 {
-				ptrs[index] = &(u.Followers)
+				ptrs[index] = &(uu.Followers)
 				index++
 			}
 		}
 	}
 }
 
-func (u *User) txDo(db *gomodel.DB, do func(*gomodel.Tx, *User) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+func (uu *User) TxDo(exec gomodel.Executor, do func(*gomodel.Tx, *User) error) error {
+	var (
+		tx  *gomodel.Tx
+		err error
+	)
+	switch r := exec.(type) {
+	case *gomodel.Tx:
+		tx = r
+	case *gomodel.DB:
+		tx, err = r.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Close()
+	default:
+		panic("unexpected underlay type of gomodel.Executor")
 	}
-	defer tx.Close()
 
-	err = do(tx, u)
+	err = do(tx, uu)
 	tx.Success(err == nil)
 	return err
 }
 
 type (
-	userStore struct {
+	UserStore struct {
 		Values []User
 		Fields uint64
 	}
 )
 
-func (s *userStore) Init(size int) {
+func (s *UserStore) Init(size int) {
 	if cap(s.Values) < size {
 		s.Values = make([]User, size)
 	} else {
@@ -137,15 +149,15 @@ func (s *userStore) Init(size int) {
 	}
 }
 
-func (s *userStore) Final(size int) {
+func (s *UserStore) Final(size int) {
 	s.Values = s.Values[:size]
 }
 
-func (s *userStore) Ptrs(index int, ptrs []interface{}) {
+func (s *UserStore) Ptrs(index int, ptrs []interface{}) {
 	s.Values[index].Ptrs(s.Fields, ptrs)
 }
 
-func (s *userStore) Realloc(count int) int {
+func (s *UserStore) Realloc(count int) int {
 	if c := cap(s.Values); c == count {
 		values := make([]User, 2*c)
 		copy(values, s.Values)
@@ -158,9 +170,10 @@ func (s *userStore) Realloc(count int) int {
 		return c
 	}
 
-	panic("unexpected capacity of userStore")
+	panic("unexpected capacity of UserStore")
 }
-func (a *userStore) Clear() {
+
+func (a *UserStore) Clear() {
 	if a.Values != nil {
 		a.Values = a.Values[:0]
 	}
@@ -170,89 +183,101 @@ const (
 	FOLLOW_USERID uint64 = 1 << iota
 	FOLLOW_FOLLOWUSERID
 
-	followFieldEnd               = iota
-	followFieldsAll              = 1<<followFieldEnd - 1
-	followFieldsExcpUserId       = followFieldsAll & (^FOLLOW_USERID)
-	followFieldsExcpFollowUserId = followFieldsAll & (^FOLLOW_FOLLOWUSERID)
+	FollowFieldEnd               = iota
+	FollowFieldsAll              = 1<<FollowFieldEnd - 1
+	FollowFieldsExcpUserId       = FollowFieldsAll & (^FOLLOW_USERID)
+	FollowFieldsExcpFollowUserId = FollowFieldsAll & (^FOLLOW_FOLLOWUSERID)
 
+	FollowTable           = "user_follow"
 	FollowUserIdCol       = "user_id"
 	FollowFollowUserIdCol = "follow_user_id"
 )
 
 var (
-	followInstance = new(Follow)
+	FollowInstance = new(Follow)
 )
 
-func (f *Follow) Table() string {
-	return "user_follow"
+func (ff *Follow) Table() string {
+	return FollowTable
 }
 
-func (f *Follow) Columns() []string {
+func (ff *Follow) Columns() []string {
 	return []string{
 		FollowUserIdCol, FollowFollowUserIdCol,
 	}
 }
 
-func (f *Follow) Vals(fields uint64, vals []interface{}) {
+func (ff *Follow) Vals(fields uint64, vals []interface{}) {
 	if fields != 0 {
-		if fields == followFieldsAll {
-			vals[0] = f.UserId
-			vals[1] = f.FollowUserId
+		if fields == FollowFieldsAll {
+			vals[0] = ff.UserId
+			vals[1] = ff.FollowUserId
 
 		} else {
 			index := 0
 			if fields&FOLLOW_USERID != 0 {
-				vals[index] = f.UserId
+				vals[index] = ff.UserId
 				index++
 			}
 			if fields&FOLLOW_FOLLOWUSERID != 0 {
-				vals[index] = f.FollowUserId
+				vals[index] = ff.FollowUserId
 				index++
 			}
 		}
 	}
 }
 
-func (f *Follow) Ptrs(fields uint64, ptrs []interface{}) {
+func (ff *Follow) Ptrs(fields uint64, ptrs []interface{}) {
 	if fields != 0 {
-		if fields == followFieldsAll {
-			ptrs[0] = &(f.UserId)
-			ptrs[1] = &(f.FollowUserId)
+		if fields == FollowFieldsAll {
+			ptrs[0] = &(ff.UserId)
+			ptrs[1] = &(ff.FollowUserId)
 
 		} else {
 			index := 0
 			if fields&FOLLOW_USERID != 0 {
-				ptrs[index] = &(f.UserId)
+				ptrs[index] = &(ff.UserId)
 				index++
 			}
 			if fields&FOLLOW_FOLLOWUSERID != 0 {
-				ptrs[index] = &(f.FollowUserId)
+				ptrs[index] = &(ff.FollowUserId)
 				index++
 			}
 		}
 	}
 }
 
-func (f *Follow) txDo(db *gomodel.DB, do func(*gomodel.Tx, *Follow) error) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+func (ff *Follow) TxDo(exec gomodel.Executor, do func(*gomodel.Tx, *Follow) error) error {
+	var (
+		tx  *gomodel.Tx
+		err error
+	)
+	switch r := exec.(type) {
+	case *gomodel.Tx:
+		tx = r
+	case *gomodel.DB:
+		tx, err = r.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Close()
+	default:
+		panic("unexpected underlay type of gomodel.Executor")
 	}
-	defer tx.Close()
 
-	err = do(tx, f)
+	err = do(tx, ff)
 	tx.Success(err == nil)
 	return err
 }
 
 type (
-	followStore struct {
+	FollowStore struct {
 		Values []Follow
 		Fields uint64
 	}
 )
 
-func (s *followStore) Init(size int) {
+func (s *FollowStore) Init(size int) {
 	if cap(s.Values) < size {
 		s.Values = make([]Follow, size)
 	} else {
@@ -260,15 +285,15 @@ func (s *followStore) Init(size int) {
 	}
 }
 
-func (s *followStore) Final(size int) {
+func (s *FollowStore) Final(size int) {
 	s.Values = s.Values[:size]
 }
 
-func (s *followStore) Ptrs(index int, ptrs []interface{}) {
+func (s *FollowStore) Ptrs(index int, ptrs []interface{}) {
 	s.Values[index].Ptrs(s.Fields, ptrs)
 }
 
-func (s *followStore) Realloc(count int) int {
+func (s *FollowStore) Realloc(count int) int {
 	if c := cap(s.Values); c == count {
 		values := make([]Follow, 2*c)
 		copy(values, s.Values)
@@ -281,16 +306,16 @@ func (s *followStore) Realloc(count int) int {
 		return c
 	}
 
-	panic("unexpected capacity of followStore")
+	panic("unexpected capacity of FollowStore")
 }
-func (a *followStore) Clear() {
+
+func (a *FollowStore) Clear() {
 	if a.Values != nil {
 		a.Values = a.Values[:0]
 	}
 }
 
-var ()
-
+// Generated SQL
 var (
 	astConv = gomodel.NewSqlId(func(gomodel.Executor) string {
 		return "insert into user_follow(user_id, follow_user_id) select ?, ? from DUAL where exists (select id from user where id = ?)"

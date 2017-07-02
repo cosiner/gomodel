@@ -1,8 +1,6 @@
 package test
 
-//go:generate gomodel -model $GOFILE
-//go:generate gomodel -sql -t sql.tmpl $GOFILE astconv.go
-//go:generate gofmt -w model_gen.go
+//go:generate gomodel $GOFILE
 
 type User struct {
 	Id   int64

@@ -1,3 +1,25 @@
+package main
+
+import (
+	"io/ioutil"
+	"text/template"
+)
+
+func parseTemplate(fname string) (*template.Template, error) {
+	var content string
+	if fname != "" {
+		c, err := ioutil.ReadFile(fname)
+		if err != nil {
+			return nil, err
+		}
+		content = string(c)
+	} else {
+		content = genTemplate
+	}
+	return template.New("").Parse(content)
+}
+
+var genTemplate = `
 package gomodel
 
 import (
@@ -13,9 +35,9 @@ import (
 const (
     {{range $index, $field := $fields}}{{$upper}}_{{$field.Upper}} {{if eq $index  0}} uint64 = 1 << iota {{end}}
     {{end}}
-    {{$unexport}}FieldEnd = iota
-    {{$unexport}}FieldsAll = 1 << {{$unexport}}FieldEnd-1
-    {{range $index, $field := $fields}}{{$unexport}}FieldsExcp{{$field.Name}} = {{$unexport}}FieldsAll &(^{{$upper}}_{{$field.Upper}})
+    {{$normal}}FieldEnd = iota
+    {{$normal}}FieldsAll = 1 << {{$normal}}FieldEnd-1
+    {{range $index, $field := $fields}}{{$normal}}FieldsExcp{{$field.Name}} = {{$normal}}FieldsAll &(^{{$upper}}_{{$field.Upper}})
     {{end}}
 
     {{$normal}}Table = "{{$model.Table}}"
@@ -45,7 +67,7 @@ func {{$recv}} Columns() []string {
 
 func {{$recv}} Vals(fields uint64, vals []interface{}) {
     if fields != 0 {
-    if fields == {{$unexport}}FieldsAll {
+    if fields == {{$normal}}FieldsAll {
         {{range $index, $field:=$fields}}vals[{{$index}}]={{$self}}.{{$field.Name}}
         {{end}}
     } else {
@@ -60,7 +82,7 @@ func {{$recv}} Vals(fields uint64, vals []interface{}) {
 
 func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     if fields != 0 {
-        if fields == {{$unexport}}FieldsAll {
+        if fields == {{$normal}}FieldsAll {
         {{range $index, $field:=$fields}}ptrs[{{$index}}]=&({{$self}}.{{$field.Name}})
         {{end}}
          } else {
@@ -73,7 +95,7 @@ func {{$recv}} Ptrs(fields uint64, ptrs []interface{}) {
     }
 }
 
-func {{$recv}} txDo(exec gomodel.Executor, do func(*gomodel.Tx, *{{$normal}}) error) error {
+func {{$recv}} TxDo(exec gomodel.Executor, do func(*gomodel.Tx, *{{$normal}}) error) error {
     var (
         tx *gomodel.Tx
         err error
@@ -97,13 +119,13 @@ func {{$recv}} txDo(exec gomodel.Executor, do func(*gomodel.Tx, *{{$normal}}) er
 }
 
 type (
-    {{$unexport}}Store struct {
+    {{$normal}}Store struct {
         Values []{{$normal}}
         Fields uint64
     }
 )
 
-func (s *{{$unexport}}Store) Init(size int) {
+func (s *{{$normal}}Store) Init(size int) {
     if cap(s.Values) < size {
         s.Values = make([]{{$normal}}, size)
     } else {
@@ -111,15 +133,15 @@ func (s *{{$unexport}}Store) Init(size int) {
     }
 }
 
-func (s *{{$unexport}}Store) Final(size int) {
+func (s *{{$normal}}Store) Final(size int) {
     s.Values = s.Values[:size]
 }
 
-func (s *{{$unexport}}Store) Ptrs(index int, ptrs []interface{}) {
+func (s *{{$normal}}Store) Ptrs(index int, ptrs []interface{}) {
     s.Values[index].Ptrs(s.Fields, ptrs)
 }
 
-func (s *{{$unexport}}Store) Realloc(count int) int {
+func (s *{{$normal}}Store) Realloc(count int) int {
     if c := cap(s.Values); c == count {
         values := make([]{{$normal}}, 2*c)
         copy(values, s.Values)
@@ -132,15 +154,18 @@ func (s *{{$unexport}}Store) Realloc(count int) int {
         return c
     }
 
-    panic("unexpected capacity of {{$unexport}}Store")
+    panic("unexpected capacity of {{$normal}}Store")
 }
-func (a *{{$unexport}}Store) Clear() {
+
+func (a *{{$normal}}Store) Clear() {
     if a.Values != nil {
         a.Values = a.Values[:0]
     }
 }
 {{end}}
 
+{{ $length := len .SQLs }} {{ if gt $length 0 }}
+// Generated SQL
 var (
 {{range $name, $sql := .SQLs}}
     {{$name}} = gomodel.NewSqlId(func(gomodel.Executor) string {
@@ -148,3 +173,6 @@ var (
     })
 {{end}}
 )
+{{ end }}
+
+`
