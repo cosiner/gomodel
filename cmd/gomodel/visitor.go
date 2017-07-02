@@ -22,7 +22,7 @@ type Model struct {
 func NewModel(name, table, nocache string) *Model {
 	return &Model{
 		Name:       name,
-		Self:       utils.ToLowerAbridgeCase(name),
+		Self:       name[:1],
 		Unexported: utils.UnexportedName(name),
 		Upper:      strings.ToUpper(name),
 		Table:      table,
